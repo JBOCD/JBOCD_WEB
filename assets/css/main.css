@@ -1,0 +1,35 @@
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.login
+{
+	height: 100%;
+	overflow: hidden;
+}
+
+.container
+{
+	margin: 0 auto;
+}
+
+.float-middle
+{
+	position: absolute;
+	top: -50%;
+	overflow: hidden;
+}
+
+.parent
+{
+	width: 1040px;
+	position: absolute;
+	top: 40%;
+}
+
+th
+{
+	text-align: left;
+}
