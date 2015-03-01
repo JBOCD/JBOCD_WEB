@@ -1,6 +1,14 @@
 if(!window.JBOCD) window.JBOCD = {};
 window.JBOCD.Socket = new ((
 	function (){
+		if(!Array.prototype.findIndex){
+			Array.prototype.findIndex = function(callback){
+				for(var i=0;i<this.length;i++){
+					if(callback(this[i], i, this)) return i;
+				}
+				return -1;
+			}
+		}
 		var Socket = function (){};
 		var operation = new Array(256);
 /*		var operation = [
@@ -18,7 +26,7 @@ window.JBOCD.Socket = new ((
 			socket.onopen = function(){
 				console.log("WebSocket: Start Connect");
 //				send suid, token
-			};
+			}
 			socket.onmessage = function(evt){
 				var fileReader = new FileReader();
 				fileReader.onloadend = (function(){
@@ -26,7 +34,10 @@ window.JBOCD.Socket = new ((
 					return interpreter;
 				})();
 				fileReader.readAsArrayBuffer(evt.data.slice(0,2));
-			};
+			}
+		}
+		Socket.prototype.close = function(){
+			socket.close();
 		}
 		Socket.prototype.login = function(uid, token){
 			var opID = operation.findIndex(isNull);
@@ -80,7 +91,7 @@ window.JBOCD.Socket = new ((
 			return strarr;
 		}
 */
-		var isNull = function(element){return !element;};
+		var isNull = function(e){return !e;};
 		var interpreter = function(){
 			var opID = JBOCD.Network.toByte(this.result.slice(1,2));
 			operation[opID].response = {
