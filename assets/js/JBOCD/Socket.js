@@ -51,7 +51,7 @@ window.JBOCD.Socket = new ((
 					JBOCD.Network.byteToBytes(0x00),
 					JBOCD.Network.byteToBytes(opID),
 					JBOCD.Network.intToBytes(uid),
-					JBOCD.Network.charsToBytes(str.slice(0,32))
+					JBOCD.Network.charsToBytes(token.slice(0,32))
 				]));
 			}
 		}

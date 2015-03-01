@@ -35,7 +35,7 @@ window.JBOCD.Network = new ((
 		Network.prototype.longToBytes = function(val){
 			return new Uint8Array([val >> 56 & 0xFF, val >> 48 & 0xFF, val >> 40 & 0xFF, val >> 32 & 0xFF, val >> 24 & 0xFF, val >> 16 & 0xFF, val >> 8 & 0xFF, val]);
 		}
-		Network.prototype.charsToBlob = function(str){
+		Network.prototype.charsToBytes = function(str){
 			var strarr = textEncoder.encode("00"+str);
 			strarr.set(this.shortToBytes(strarr.length-2), 0);
 			return strarr;
