@@ -1,21 +1,24 @@
-if(!JBOCD) JBOCD = {};
-JBOCD.Network = new ((
+if(!window.JBOCD) window.JBOCD = {};
+window.JBOCD.Network = new ((
 	function (){
 		var Network = function (){};
 		var textEncoder = new TextEncoder();
 		var textDecoder = new TextDecoder();
 		// Network to Host function
 		Network.prototype.toByte = function(arrayBuffer){
-			return arrayBuffer[0];
+			return new Uint8Array(arrayBuffer.slice(0,1))[0];
 		}
 		Network.prototype.toShort = function(arrayBuffer){
-			return arrayBuffer[0] << 8 | arrayBuffer[1];
+			var val = new Uint8Array(arrayBuffer.slice(0,2));
+			return val[0] << 8 | val[1];
 		}
 		Network.prototype.toInt = function(arrayBuffer){
-			return arrayBuffer[0] << 24 | arrayBuffer[1] << 16 | arrayBuffer[2] << 8 | arrayBuffer[3];
+			var val = new Uint8Array(arrayBuffer.slice(0,4));
+			return val[0] << 24 | val[1] << 16 | val[2] << 8 | val[3];
 		}
 		Network.prototype.toLong = function(arrayBuffer){
-			return arrayBuffer[0] << 56 | arrayBuffer[1] << 48 | arrayBuffer[2] << 40 | arrayBuffer[3] << 32 | arrayBuffer[4] << 24 | arrayBuffer[5] << 16 | arrayBuffer[6] << 8 | arrayBuffer[7];
+			var val = new Uint8Array(arrayBuffer.slice(0,8));
+			return val[0] << 56 | val[1] << 48 | val[2] << 40 | val[3] << 32 | val[4] << 24 | val[5] << 16 | val[6] << 8 | val[7];
 		}
 		Network.prototype.toString = function(arrayBuffer){
 			return textDecoder.decode(arrayBuffer.subarray(2, this.toShort(arrayBuffer)));

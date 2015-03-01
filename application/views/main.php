@@ -26,6 +26,7 @@
     
     <!-- Load js/JBOCD/* -->
     <script src="<?php echo asset_url(); ?>js/JBOCD/Network.js"></script>
+    <script src="<?php echo asset_url(); ?>js/JBOCD/Socket.js"></script>
 
     <!-- Metro UI CSS JavaScript plugins -->
 	<script>
