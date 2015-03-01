@@ -1,5 +1,5 @@
 if(!window.JBOCD) window.JBOCD = {};
-window.JBOCD.Scoket = new ((
+window.JBOCD.Socket = new ((
 	function (){
 		var Socket = function (){};
 		var operation = new Array(256);
@@ -13,7 +13,7 @@ window.JBOCD.Scoket = new ((
 		var socket;
 		Socket.prototype.init = function(uid, token){
 			var suid = uid, stoken = token;
-			socket = new WebSocket("ws://"+window.location.host+":3389", "JBOCD");
+			socket = new WebSocket("ws://"+window.location.hostname+":3389", "JBOCD");
 			socket.bunaryType = Blob;
 			socket.onopen = function(){
 				console.log("WebSocket: Start Connect");
