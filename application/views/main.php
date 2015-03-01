@@ -23,6 +23,9 @@
     <script src="<?php echo asset_url(); ?>js/jquery/jquery.widget.min.js"></script>
     <script src="<?php echo asset_url(); ?>js/jquery/jquery.mousewheel.js"></script>
     <script src="<?php echo asset_url(); ?>js/prettify/prettify.js"></script>
+    
+    <!-- Load js/JBOCD/* -->
+    <script src="<?php echo asset_url(); ?>js/Network.js"></script>
 
     <!-- Metro UI CSS JavaScript plugins -->
 	<script>
