@@ -9,7 +9,34 @@ window.JBOCD.Socket = new ((
 				return -1;
 			}
 		}
+		var socket;
+		var delFileCB;
 		var Socket = function (){};
+		var fileReader = function (cb, blob, len){
+			var fr = new FileReader();
+			if(!len) len = blob.size;
+			fr.onloadend = cb;
+			fr.blob = blob;
+			fr.readAsArrayBuffer(blob.slice(0,len));
+		}
+		var sendTimer = 0;
+		var sendQueue = [];
+		var send = function(blob, priority){
+			if(blob){
+				if(priority === 0){
+					socket.send(blob);
+				}else{
+					sendQueue.push(blob);
+				}
+			}
+			if(sendQueue.length > 0 && socket.bufferedAmount == 0){
+				socket.send(sendQueue.shift());
+			}
+			if(sendQueue.length > 0){
+				clearTimeout(sendTimer);
+				sendTimer = setTimeout(send, 100); // this time can be approximate by thoughput ( (remain byte prev - remain byte now) / time)
+			}
+		}
 		var operation = new Array(256);
 /*		var operation = [
 			{
@@ -18,23 +45,32 @@ window.JBOCD.Socket = new ((
 			}, ...
 		];
 */
-		var socket;
-		Socket.prototype.init = function(uid, token){
+		Socket.prototype.init = function(uid, token, delFileCallback){
 			var suid = uid, stoken = token;
-			socket = new WebSocket("ws://"+window.location.hostname+":3362", "JBOCD");
-			socket.bunaryType = Blob;
-			socket.onopen = function(){
-				console.log("WebSocket: Start Connect");
-//				send suid, token
-			}
-			socket.onmessage = function(evt){
-				var fileReader = new FileReader();
-				fileReader.onloadend = interpreter;
-				fileReader.blob = evt.data;
-				fileReader.readAsArrayBuffer(evt.data.slice(0,2));
-			}
-			socket.onend = function(){
-				console.log("WebSocket: End Connect");
+			if(!socket){
+				if(!delFileCallback || delFileCallback.constructor !== Function){
+					console.log("JBOCD.Socket.init(): Missing delFileCallback or delFileCallback is not a function.");
+					return ;
+				}
+				operation[255] = { request: { cb: delFileCallback } };
+				socket = new WebSocket("ws://"+window.location.hostname+":3362", "JBOCD");
+				socket.bunaryType = Blob;
+				socket.onopen = function(){
+					console.log("WebSocket: Start Connect");
+					//send suid, token
+				}
+				socket.onmessage = function(evt){
+					var fileReader = new FileReader();
+					fileReader.onloadend = interpreter;
+					fileReader.blob = evt.data;
+					fileReader.readAsArrayBuffer(evt.data.slice(0,2));
+				}
+				socket.onend = function(){
+					console.log("WebSocket: End Connect");
+					socket = null;
+				}
+			}else{
+				console.log("WebSocket: Already Started.");
 			}
 		}
 		Socket.prototype.close = function(){
@@ -45,74 +81,353 @@ window.JBOCD.Socket = new ((
 			if(opID >= 0){
 				operation[opID] = {
 					request : {
-						command: 0x00
+						command: 0x00,
+						opID: opID
 					}
 				}
-				socket.send(new Blob([
+				send(new Blob([
 					JBOCD.Network.byteToBytes(0x00),
 					JBOCD.Network.byteToBytes(opID),
 					JBOCD.Network.intToBytes(uid),
 					JBOCD.Network.charsToBytes(token.slice(0,32)).subarray(2, 34)
-				]));
+				]), 0);
 			}
+			return opID;
 		}
-/*
-		var textDecoder = new TextDecoder();
-		// Network to Host function
-		Network.prototype.toByte = function(arrayBuffer){
-			return arrayBuffer[0];
+		Socket.prototype.getCloudDrive = function(callback){
+			var opID = operation.findIndex(isNull);
+			if(opID >= 0){
+				operation[opID] = {
+					request : {
+						command: 0x02,
+						cb: callback,
+						opID: opID
+					}
+				}
+				send(new Blob([
+					JBOCD.Network.byteToBytes(0x02),
+					JBOCD.Network.byteToBytes(opID)
+				]), 0);
+			}
+			return opID;
 		}
-		Network.prototype.toShort = function(arrayBuffer){
-			return arrayBuffer[0] << 8 | arrayBuffer[1];
+		Socket.prototype.getLogicalDrive = function(callback){
+			var opID = operation.findIndex(isNull);
+			if(opID >= 0){
+				operation[opID] = {
+					request : {
+						command: 0x03,
+						cb: callback,
+						opID: opID
+					}
+				}
+				send(new Blob([
+					JBOCD.Network.byteToBytes(0x03),
+					JBOCD.Network.byteToBytes(opID)
+				]), 0);
+			}
+			return opID;
 		}
-		Network.prototype.toInt = function(arrayBuffer){
-			return arrayBuffer[0] << 24 | arrayBuffer[1] << 16 | arrayBuffer[2] << 8 | arrayBuffer[3];
+		Socket.prototype.list = function(callback, logicalDriveID, parentID){
+			var opID = operation.findIndex(isNull);
+			if(opID >= 0){
+				operation[opID] = {
+					request : {
+						command: 0x04,
+						opID: opID,
+						cb: callback,
+						ldID: logicalDriveID,
+						parentID: parentID
+					}
+				}
+				send(new Blob([
+					JBOCD.Network.byteToBytes(0x04),
+					JBOCD.Network.byteToBytes(opID),
+					JBOCD.Network.intToBytes(logicalDriveID),
+					JBOCD.Network.longToBytes(parentID)
+				]), 0);
+			}
+			return opID;
 		}
-		Network.prototype.toLong = function(arrayBuffer){
-			return arrayBuffer[0] << 56 | arrayBuffer[1] << 48 | arrayBuffer[2] << 40 | arrayBuffer[3] << 32 | arrayBuffer[4] << 24 | arrayBuffer[5] << 16 | arrayBuffer[6] << 8 | arrayBuffer[7];
+		Socket.prototype.createFile = function(callback, logicalDriveID, parentID, fileSize, name){
+			var opID = operation.findIndex(isNull);
+			if(opID >= 0){
+				operation[opID] = {
+					request : {
+						command: 0x20,
+						opID: opID,
+						cb: callback,
+						ldID: logicalDriveID,
+						pID: parentID,
+						size: fileSize,
+						name: name
+					}
+				}
+				send(new Blob([
+					JBOCD.Network.byteToBytes(0x20),
+					JBOCD.Network.byteToBytes(opID),
+					JBOCD.Network.intToBytes(logicalDriveID),
+					JBOCD.Network.longToBytes(parentID),
+					JBOCD.Network.longToBytes(fileSize),
+					JBOCD.Network.charsToBytes(name)
+				]), 0);
+			}
+			return opID;
 		}
-		Network.prototype.toString = function(arrayBuffer){
-			return textDecoder.decode(arrayBuffer.subarray(2, this.toShort(arrayBuffer)));
+		Socket.prototype.putChunk = function(callback, logicalDriveID, cloudDriveID, fileID, seqNum, name, blob){
+			var opID = operation.findIndex(isNull);
+			if(opID >= 0){
+				operation[opID] = {
+					request : {
+						command: 0x21,
+						opID: opID,
+						cb: callback,
+						ldID: logicalDriveID,
+						cdID: cloudDriveID,
+						fID: fileID,
+						size: blob.size,
+						name: name,
+						blob: blob
+					}
+				}
+				send(new Blob([
+					JBOCD.Network.byteToBytes(0x21),
+					JBOCD.Network.byteToBytes(opID),
+					JBOCD.Network.intToBytes(logicalDriveID),
+					JBOCD.Network.intToBytes(cloudDriveID),
+					JBOCD.Network.longToBytes(fileID),
+					JBOCD.Network.intToBytes(seqNum),
+					JBOCD.Network.charsToBytes(""), // name is do nothing
+					blob
+				]), 1);
+			}
+			return opID;
 		}
-		Network.prototype.byteToBytes = function(val){
-			return new Uint8Array([val]);
+		Socket.prototype.getFile = function(callback, logicalDriveID, fileID){
+			var opID = operation.findIndex(isNull);
+			if(opID >= 0){
+				operation[opID] = {
+					request : {
+						command: 0x22,
+						opID: opID,
+						cb: callback,
+						ldID: logicalDriveID,
+						fID: fileID
+					}
+				}
+				send(new Blob([
+					JBOCD.Network.byteToBytes(0x22),
+					JBOCD.Network.byteToBytes(opID),
+					JBOCD.Network.intToBytes(logicalDriveID),
+					JBOCD.Network.longToBytes(fileID)
+				]), 0);
+			}
+			return opID;
 		}
-		Network.prototype.shortToBytes = function(val){
-			return new Uint8Array([val >> 8 & 0xFF, val]);
+		Socket.prototype.delFile = function(callback, logicalDriveID, fileID){
+			send(new Blob([
+				JBOCD.Network.byteToBytes(0x28),
+				JBOCD.Network.byteToBytes(255),
+				JBOCD.Network.intToBytes(logicalDriveID),
+				JBOCD.Network.longToBytes(fileID)
+			]), 0);
+			return 255;
 		}
-		Network.prototype.intToBytes = function(val){
-			return new Uint8Array([val >> 24 & 0xFF, val >> 16 & 0xFF, val >> 8 & 0xFF, val]);
-		}
-		Network.prototype.longToBytes = function(val){
-			return new Uint8Array([val >> 56 & 0xFF, val >> 48 & 0xFF, val >> 40 & 0xFF, val >> 32 & 0xFF, val >> 24 & 0xFF, val >> 16 & 0xFF, val >> 8 & 0xFF, val]);
-		}
-		Network.prototype.charsToBlob = function(str){
-			var strarr = textEncoder.encode("00"+str);
-			strarr.set(this.shortToBytes(strarr.length-2), 0);
-			return strarr;
-		}
-*/
 		var isNull = function(e){return !e;};
 		var interpreter = function(){
-			var opID = JBOCD.Network.toByte(this.result.slice(1,2));
-			operation[opID].response = {
-				blob : this.blob
+			var command = JBOCD.Network.toByte(this.result, 0);
+			var opID = JBOCD.Network.toByte(this.result, 1);
+			if(!operation[opID]) return ; // operationID has been release
+			if(!!operation[opID].response && !!operation[opID].response.blob){
+				operation[opID].response.blob.push(this.blob);
+			}else{
+				operation[opID].response = {
+					blob : [this.blob]
+				}
 			}
-			switch(JBOCD.Network.toByte(this.result)){
+			switch(command){
 				case 0x00:
 					// close socket; or resent?; or reload page?
 					console.log("WebSocket: JBOCD: login fail.");
+					!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
 					delete operation[opID];
 					break;
 				case 0x01:
 					console.log("WebSocket: JBOCD: login successful.");
+					!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
 					delete operation[opID];
 					// get cloud drive; get logical drive;
 					break;
 				case 0x02:
+					fileReader(processCloudDrive, this.blob);
+					break;
+				case 0x03:
+					fileReader(processLogicalDrive, this.blob);
+					break;
+				case 0x04:
+					fileReader(processFileList, this.blob);
+					break;
+				case 0x20:
+					fileReader(processCreateFile, this.blob);
+					break;
+				case 0x21:
+					fileReader(processPutChunkInfo, this.blob);
+					break;
+				case 0x22:
+					fileReader(processGetChunkInfo, this.blob);
+					break;
+				case 0x23:
+					fileReader(processGetChunk, this.blob);
+					break;
+				case 0x28:
+					fileReader(processDelFile, this.blob);
 					break;
 			}
-		};
+		}
+		var processCloudDrive = function(){
+			var opID = JBOCD.Network.toByte(this.result, 1);
+			var res = operation[opID].response;
+			var shift = 2;
+			var i;
+			if(!res.numOfCD){
+				res.numOfCD = JBOCD.Network.toShort(this.result, shift);
+				res.cdList = new Array(res.numOfCD);
+				shift = 4;
+			}
+			for(i=res.cdList.findIndex(isNull);i<res.numOfCD;i++, shift+=4){
+				res.cdList[i] = JBOCD.Network.toInt(this.result, shift);
+			}
+			if(i>=res.numOfCD){
+				!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
+				delete operation[opID];
+			}
+		}
+		var processLogicalDrive = function(){
+			var opID = JBOCD.Network.toByte(this.result, 1);
+			var res = operation[opID].response;
+			var shift = 2;
+			var i;
+			if(!res.numOfLD){
+				res.numOfLD = JBOCD.Network.toShort(this.result, shift);
+				res.ldList = new Array(res.numOfLD);
+				shift = 4;
+			}
+			for(i=res.ldList.findIndex(isNull);i<res.numOfLD;i++){
+				res.ldList[i] = {
+					ldID : JBOCD.Network.toInt(this.result, shift),
+					algoID : JBOCD.Network.toInt(this.result, shift+4),
+					size : JBOCD.Network.toLong(this.result, shift+8),
+					name : JBOCD.Network.toString(this.result, shift+16)
+				}
+				shift+=20+res.ldList[i].name.length;
+				res.ldList[i].numOfCD = JBOCD.Network.toShort(this.result, shift-2);
+				res.ldList[i].cdList = [];
+				for(var j=0;j<res.ldList[i].numOfCD; j++, shift+=12){
+					res.ldList[i].cdList.push({
+						cdID : JBOCD.Network.toInt(this.result, shift),
+						size : JBOCD.Network.toInt(this.result, shift+4)
+					});
+				}
+			}
+			if(i>=res.numOfLD){
+				!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
+				delete operation[opID];
+			}
+		}
+		var processFileList = function(){
+			var opID = JBOCD.Network.toByte(this.result, 1);
+			var res = operation[opID].response;
+			var shift = 2;
+			var i;
+			if(!res.numOfFile){
+				res.numOfFile = JBOCD.Network.toShort(this.result, shift);
+				res.fileList = new Array(res.numOfFile);
+				shift = 4;
+			}
+			for(i=res.fileList.findIndex(isNull);i<res.numOfLD;i++){
+				res.fileList[i] = {
+					fID : JBOCD.Network.toLong(this.result, shift),
+					size : JBOCD.Network.toLong(this.result, shift+8),
+					name : JBOCD.Network.toString(this.result, shift+16)
+				}
+				shift+=18+res.list[i].name.length;
+			}
+			if(i>=res.numOfFile){
+				!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
+				delete operation[opID];
+			}
+		}
+		var processCreateFile = function(){
+			var opID = JBOCD.Network.toByte(this.result, 1);
+			operation[opID].response.fID = JBOCD.Network.toLong(this.result, 2);
+			!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
+			delete operation[opID];
+		}
+		var processPutChunk = function(){
+			var opID = JBOCD.Network.toByte(this.result, 1);
+			var res = operation[opID].response;
+			res.seqNum = JBOCD.Network.toInt(this.result, 2);
+			res.status = JBOCD.Network.toByte(this.result, 6);
+			res.size = JBOCD.Network.toInt(this.result, 7);
+			res.seqNum = JBOCD.Network.toInt(this.result, 8);
+			!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
+			delete operation[opID];
+		}
+		var processGetChunkInfo = function(){
+			var opID = JBOCD.Network.toByte(this.result, 1);
+			var res = operation[opID].response;
+			res.numOfChunk = JBOCD.Network.toInt(this.result, 2);
+			res.chunkList = new Array(res.numOfChunk);
+		}
+		var processGetChunk = function(){
+			var opID = JBOCD.Network.toByte(this.result, 1);
+			var res = operation[opID].response;
+			var seqNum = JBOCD.Network.toInt(this.result, 2);
+			if(!!res.chunkList[seqNum]){
+				var thisSize = JBOCD.Network.toInt(this.result, 10);
+				var seqInfo = res.chunkList[seqNum];
+				var blobInfo = {
+					start: JBOCD.Network.toInt(this.result, 6),
+					length: thisSize,
+					blob: this.blob.slice(14)
+				};
+				var i;
+				seqInfo.getSize += thisSize;
+				seqInfo.isError |= this.blob.size - 14 == thisSize;
+				for(i=0; blobInfo.start < seqInfo.blobList[i].start || i < seqInfo.blobList.length; i++);
+				seqInfo.blobList.splice(i,0,blobInfo);
+			}else{
+				var thisSize = JBOCD.Network.toInt(this.result, 10);
+				res.chunkList[seqNum] = {
+					seqNum: seqNum,
+					size: JBOCD.Network.toInt(this.result, 6),
+					blobList: [
+						{
+							start: 0,
+							length: thisSize,
+							blob: this.blob.slice(14)
+						}
+					],
+					getSize: thisSize,
+					isError: this.blob.size - 14 == thisSize
+				}
+
+			}
+			if(res.chunkList[seqNum].getSize >= res.chunkList[seqNum].size){
+				!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
+				if(res.chunkList.findIndex(isNull) < 0){
+					delete operation[opID];
+				}
+			}
+		}
+		var processDelFile = function(){
+			var res = {};
+			res.ldID = JBOCD.Network.toInt(this.result, 2);
+			res.pID = JBOCD.Network.toLong(this.result, 6);
+			res.fID = JBOCD.Network.toLong(this.result, 14);
+			res.name = JBOCD.Network.toString(this.result, 22);
+			delFileCB(res);
+		}
 		return Socket;
 	}
 )())();
