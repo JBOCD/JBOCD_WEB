@@ -29,11 +29,12 @@ window.JBOCD.Socket = new ((
 			}
 			socket.onmessage = function(evt){
 				var fileReader = new FileReader();
-				fileReader.onloadend = (function(){
-					var blob = evt.data;
-					return interpreter;
-				})();
+				fileReader.onloadend = interpreter;
+				fileReader.blob = evt.data;
 				fileReader.readAsArrayBuffer(evt.data.slice(0,2));
+			}
+			socket.onend = function(){
+				console.log("WebSocket: End Connect");
 			}
 		}
 		Socket.prototype.close = function(){
@@ -51,7 +52,7 @@ window.JBOCD.Socket = new ((
 					JBOCD.Network.byteToBytes(0x00),
 					JBOCD.Network.byteToBytes(opID),
 					JBOCD.Network.intToBytes(uid),
-					JBOCD.Network.charsToBytes(token.slice(0,32))
+					JBOCD.Network.charsToBytes(token.slice(0,32).subarray(2, 34));
 				]));
 			}
 		}
@@ -95,7 +96,7 @@ window.JBOCD.Socket = new ((
 		var interpreter = function(){
 			var opID = JBOCD.Network.toByte(this.result.slice(1,2));
 			operation[opID].response = {
-				blob : blob
+				blob : this.blob
 			}
 			switch(JBOCD.Network.toByte(this.result)){
 				case 0x00:
