@@ -44,8 +44,7 @@ window.JBOCD.Socket = (function (){
 		}, ...
 	];
 */
-	Socket.prototype.init = function(uid, token, delFileCallback){
-		var suid = uid, stoken = token;
+	Socket.prototype.init = function(delFileCallback){
 		if(!socket){
 			if(!delFileCallback || delFileCallback.constructor !== Function){
 				console.log("JBOCD.Socket.init(): Missing delFileCallback or delFileCallback is not a function.");
@@ -74,6 +73,7 @@ window.JBOCD.Socket = (function (){
 	}
 	Socket.prototype.close = function(){
 		socket.close();
+		socket = null;
 	}
 	Socket.prototype.login = function(uid, token){
 		var opID = operation.findIndex(isNull);
@@ -88,7 +88,7 @@ window.JBOCD.Socket = (function (){
 				JBOCD.Network.byteToBytes(0x00),
 				JBOCD.Network.byteToBytes(opID),
 				JBOCD.Network.intToBytes(uid),
-				JBOCD.Network.charsToBytes(token.slice(0,32)).subarray(2, 34)
+				JBOCD.Network.charsToBytes(token.slice(0,32)).subarray(1, 33)
 			]), 0);
 		}
 		return opID;
