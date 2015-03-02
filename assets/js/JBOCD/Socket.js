@@ -293,10 +293,12 @@ window.JBOCD.Socket = (function (){
 			res.cdList = new Array(res.numOfCD);
 			shift = 4;
 		}
-		for(i=res.cdList.findIndex(isNull);i<res.numOfCD;i++, shift+=4){
-			res.cdList[i] = JBOCD.Network.toInt(this.result, shift);
+		if((i=res.cdList.findIndex(isNull)) >= 0){
+			for(;i<res.numOfCD;i++, shift+=4){
+				res.cdList[i] = JBOCD.Network.toInt(this.result, shift);
+			}
 		}
-		if(i>=res.numOfCD){
+		if(i<0 || i>=res.numOfCD){
 			!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
 			delete operation[opID];
 		}
@@ -311,24 +313,26 @@ window.JBOCD.Socket = (function (){
 			res.ldList = new Array(res.numOfLD);
 			shift = 4;
 		}
-		for(i=res.ldList.findIndex(isNull);i<res.numOfLD;i++){
-			res.ldList[i] = {
-				ldID : JBOCD.Network.toInt(this.result, shift),
-				algoID : JBOCD.Network.toInt(this.result, shift+4),
-				size : JBOCD.Network.toLong(this.result, shift+8),
-				name : JBOCD.Network.toString(this.result, shift+16)
-			}
-			shift+=20+res.ldList[i].name.length;
-			res.ldList[i].numOfCD = JBOCD.Network.toShort(this.result, shift-2);
-			res.ldList[i].cdList = [];
-			for(var j=0;j<res.ldList[i].numOfCD; j++, shift+=12){
-				res.ldList[i].cdList.push({
-					cdID : JBOCD.Network.toInt(this.result, shift),
-					size : JBOCD.Network.toInt(this.result, shift+4)
-				});
+		if((i=res.cdList.findIndex(isNull)) >= 0){
+			for(;i<res.numOfLD;i++){
+				res.ldList[i] = {
+					ldID : JBOCD.Network.toInt(this.result, shift),
+					algoID : JBOCD.Network.toInt(this.result, shift+4),
+					size : JBOCD.Network.toLong(this.result, shift+8),
+					name : JBOCD.Network.toString(this.result, shift+16)
+				}
+				shift+=20+res.ldList[i].name.length;
+				res.ldList[i].numOfCD = JBOCD.Network.toShort(this.result, shift-2);
+				res.ldList[i].cdList = [];
+				for(var j=0;j<res.ldList[i].numOfCD; j++, shift+=12){
+					res.ldList[i].cdList.push({
+						cdID : JBOCD.Network.toInt(this.result, shift),
+						size : JBOCD.Network.toInt(this.result, shift+4)
+					});
+				}
 			}
 		}
-		if(i>=res.numOfLD){
+		if(i<0 || i>=res.numOfLD){
 			!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
 			delete operation[opID];
 		}
@@ -343,15 +347,17 @@ window.JBOCD.Socket = (function (){
 			res.fileList = new Array(res.numOfFile);
 			shift = 4;
 		}
-		for(i=res.fileList.findIndex(isNull);i<res.numOfLD;i++){
-			res.fileList[i] = {
-				fID : JBOCD.Network.toLong(this.result, shift),
-				size : JBOCD.Network.toLong(this.result, shift+8),
-				name : JBOCD.Network.toString(this.result, shift+16)
+		if((i=res.cdList.findIndex(isNull)) >= 0){
+			for(;i<res.numOfLD;i++){
+				res.fileList[i] = {
+					fID : JBOCD.Network.toLong(this.result, shift),
+					size : JBOCD.Network.toLong(this.result, shift+8),
+					name : JBOCD.Network.toString(this.result, shift+16)
+				}
+				shift+=18+res.list[i].name.length;
 			}
-			shift+=18+res.list[i].name.length;
 		}
-		if(i>=res.numOfFile){
+		if(i<0 || i>=res.numOfFile){
 			!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
 			delete operation[opID];
 		}
