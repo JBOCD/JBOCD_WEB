@@ -51,7 +51,7 @@ window.JBOCD.Socket = (function (){
 				return ;
 			}
 			operation[255] = { request: { cb: delFileCallback } };
-			socket = new WebSocket("ws://"+window.location.hostname+":3362", "JBOCD");
+			socket = new WebSocket("wss://"+window.location.hostname+":3362", "JBOCD");
 			socket.bunaryType = Blob;
 			socket.onopen = function(){
 				console.log("WebSocket: Start Connect");
