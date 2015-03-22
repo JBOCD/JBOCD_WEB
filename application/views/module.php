@@ -1,7 +1,6 @@
 			<?php
 				$colors = array('lime', 'green', 'emerald', 'teal', 'cyan', 'cobalt', 'indigo', 'violet', 'pink', 'magenta', 'crimson', 'red', 'orange', 'amber', 'yellow', 'brown', 'olive', 'steel', 'mauve', 'taupe', 'gray', 'dark', 'darker', 'darkBrown', 'darkCrimson', 'darkMagenta', 'darkIndigo', 'darkCyan', 'darkCobalt', 'darkTeal', 'darkEmerald', 'darkGreen', 'darkOrange', 'darkRed', 'darkPink', 'darkViolet', 'darkBlue', 'lightBlue', 'lightTeal', 'lightOlive', 'lightOrange', 'lightPink', 'lightRed', 'lightGreen');
 			?>
-			<script src="<?php echo asset_url(); ?>js/metro/metro-input-control.js"></script>
 			<div class="row">
                 <div class="span12">
                     <h1 class="header">Modules Management</h1>
@@ -49,3 +48,4 @@
 					<h3>No module yet!</h3>
 				<?php } ?>
 			</div>
+			<script src="<?php echo asset_url(); ?>js/metro/metro-input-control.js"></script>

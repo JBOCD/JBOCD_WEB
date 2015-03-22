@@ -22,7 +22,30 @@ class Main extends CI_Controller {
 	public function index(){
 		$this->load->model('module_model');
 		$data['modules'] = $this->module_model->getModuleList();
-		$this->view_model->generateView($this->load->view('content', $data, true));
+		$this->generateView($this->load->view('content', $data, true));
+	}
+	
+	protected function generateView($contentData = null){
+		$this->load->model('profile_model');
+	
+		$data = array();
+		$navData = array('menus'=>array());
+		$navData['profile'] = $this->profile_model->getProfile($this->session->userdata('login_data'));
+		
+		$this->load->model('module_model');
+		$settings = array('title'=>'Setting', 'link'=>'#', 'submenu'=>array(), 'dividerBefore'=>false);
+		
+		foreach($this->module_model->getModuleList() as $module){
+			array_push($settings['submenu'], array('title'=>$module['name'], 'link'=>site_url('main/module/'.$module['dir']), 'dividerBefore'=>false));
+		}
+		array_push($settings['submenu'], array('title'=>'Modules', 'link'=>site_url('main/module'), 'dividerBefore'=>true));
+		array_push($settings['submenu'], array('title'=>'Volumes', 'link'=>site_url('main/volume'), 'dividerBefore'=>true));
+		array_push($navData['menus'], $settings);
+		
+		$data['nav'] = $this->load->view('nav', $navData, true);
+		$data['content'] = $contentData;
+		$data['morrisChart'] = false;
+		$this->load->view('main', $data);
 	}
 	
 	public function installModule(){
@@ -94,7 +117,7 @@ class Main extends CI_Controller {
 			}
 		}
 		
-		$this->view_model->generateView($this->load->view('successfulUpload', $mViewData, true));
+		$this->generateView($this->load->view('successfulUpload', $mViewData, true));
 	}
 	
 	public function module($dir = null){
@@ -112,14 +135,14 @@ class Main extends CI_Controller {
 					array_push($modules, array($row['id'], $row['name'], $row['dir'], '<a class="fg-white" href="'.site_url('main/distroy/'.$row['dir']).'"><i class="icon-remove"></i></a>'));
 				}
 			}
-			$this->view_model->generateView($this->load->view('module', array('thead'=>array('ID', 'Module Name', 'Directory', 'Remove'),'tbody'=>$modules), true));
+			$this->generateView($this->load->view('module', array('thead'=>array('ID', 'Module Name', 'Directory', 'Remove'),'tbody'=>$modules), true));
 		}else{
 			if(!file_exists($this->php_module_path.$dir.'/'.$dir.'.php')){
 				echo "File not exist!";
 			}else{
 				include($this->php_module_path.$dir.'/'.$dir.'.php');
 				$module = new $dir($this->db);
-				$this->view_model->generateView($this->load->view('account', $module->getAccountView($this->session->userdata('login_data')['id']), true));
+				$this->generateView($this->load->view('account', $module->getAccountView($this->session->userdata('login_data')['id']), true));
 			}
 		}
 	}
@@ -172,8 +195,9 @@ class Main extends CI_Controller {
 			));
 			unset($handler);
 		}
+		$this->load->model('view_model');
 		$this->view_model->generateView($this->load->view('volume', array('cloudDrives'=>$content), true));
-		//$this->view_model->generateView($this->load->view('volume', array('cloudDrives'=>$content), true));
+		//$this->generateView($this->load->view('volume', array('cloudDrives'=>$content), true));
 	}
 
 }
