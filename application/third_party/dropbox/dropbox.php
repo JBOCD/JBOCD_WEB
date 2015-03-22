@@ -6,6 +6,7 @@ use \Dropbox as dbx;
 
 class Dropbox {
 
+	protected $lid;
 	protected $db;
 	protected $statusCode;
 	protected $webAuth;
@@ -17,10 +18,19 @@ class Dropbox {
 		$this->statusCode = array('Deactivated', 'Normal', 'Disabled');
 		if(!isset($db) || $db == null) return false;
 		$this->db = $db;
+
+		if($q = $this->db->query("SELECT * FROM `libraries` WHERE `dir` = 'dropbox'")){
+			if ($q->num_rows() > 0){
+				$row = $q->row();
+			}else{
+				throw new Exception("Cannot find dropbox library record in database.", 1);
+			}
+			$this->lid = $row->id;
+		}
 	}
 	
-	public function getAccountView(){
-		$result = $this->db->query('SELECT * FROM `dropbox`');
+	public function getAccountView($uid){
+		$result = $this->db->query('SELECT * FROM `dropbox` WHERE `id` IN (SELECT `cdid` FROM `clouddrive` WHERE `uid` = ? AND `lid` = ?)', array($uid, $this->lid));
 		if($result->num_rows() <= 0){
 			$account = false;
 		}else{
@@ -73,6 +83,7 @@ class Dropbox {
 			$dbxClient->disableAccessToken();
 			$this->db->trans_start();
 			$this->db->delete('dropbox', array('id' => $id));
+			$this->db->delete('clouddrive', array('cdid' => $id));
 			$this->db->trans_complete();
 			if ($this->db->trans_status() === FALSE){
 				echo "This transaction goes wrong!";
@@ -97,14 +108,14 @@ class Dropbox {
 		redirect('main/module/dropbox');
 	}
 	
-	public function proc($request){
+	public function proc($request, $uid){
 		list($accessToken, $dropboxUserId, $urlState) = $this->webAuth->finish($request);
 		try{
 			$dbxClient = new dbx\Client($accessToken, "PCL1401");
 			$accountInfo = $dbxClient->getAccountInfo();
-			$q = $this->db->query("SELECT * FROM `dropbox` WHERE `userid` = ?", array($dropboxUserId));
 			$this->db->trans_start();
-			$this->db->replace('dropbox', array('key'=>$accessToken, 'userid'=>$dropboxUserId, 'status'=>1, 'name'=>$accountInfo['display_name']));
+			$this->db->replace('clouddrive', array('lid'=>$this->lid, 'uid'=>$uid));
+			$this->db->replace('dropbox', array('id'=>$this->db->insert_id(),'key'=>$accessToken, 'userid'=>$dropboxUserId, 'status'=>1, 'name'=>$accountInfo['display_name']));
 			$this->db->trans_complete();
 		}catch(Exception $e){
 			$this->dise($row['id']);
@@ -126,6 +137,29 @@ class Dropbox {
 		$this->db->query('DROP TABLE IF EXISTS `dropbox`');
 		$this->db->query('DELETE FROM `libraries` WHERE `dir` = ?', array('dropbox'));
 		return true;
+	}
+
+	public function getDrivesInfo($id){
+		$result = $this->db->query('SELECT * FROM `dropbox` WHERE `id` = ?', array($id));
+		try{
+			$row = $result->row();
+			$dbxClient = new dbx\Client($row->key, "PCL1401");
+			$accountInfo = $dbxClient->getAccountInfo();
+			return array(
+				'id'=>$id,
+				'quota'=>round($accountInfo['quota_info']['quota'] / 1073741824, 2, PHP_ROUND_HALF_DOWN), 
+				'available'=>round(($accountInfo['quota_info']['quota'] - $accountInfo['quota_info']['normal'] - $accountInfo['quota_info']['shared']) / 1073741824,2,PHP_ROUND_HALF_DOWN), 
+				'name'=>$row->name,
+				'status'=>true);
+		}catch(Exception $e){
+			//$this->dise($row['id']);
+			return array(
+				'id'=>$id,
+				'quota'=>0, 
+				'available'=>0, 
+				'name'=>$row->name,
+				'status'=>false);;
+		}
 	}
 
 }

@@ -5,13 +5,19 @@ error_reporting(E_ALL);
 
 class Login_model extends CI_Model {
 
+	private $token;
+
 	public function __construct(){
 		parent::__construct();
 		$this->load->database('default');
 	}
+
+	public function getCSRF(){
+		return $this->token;
+	}
 	
 	public function refreshToken($id){
-		$this->db->query('REPLACE INTO `token` (`id`,`timestamp`) VALUES(?, CURRENT_TIMESTAMP)', array($id));
+		$this->db->query('REPLACE INTO `token` (`id`,`timestamp`, `token`, `session`) VALUES(?, CURRENT_TIMESTAMP, ?, ?)', array($id, $this->token, $this->session->userdata('session_id')));
 		return $id;
 	}
 	
@@ -25,6 +31,7 @@ class Login_model extends CI_Model {
 		if($result->num_rows() == 1){
 			$result = $result->row();
 			if(hash('sha1', $pw) == $result->pw) {
+				$this->token = hash("sha512",mt_rand(0,mt_getrandmax()));
 				$this->session->set_userdata('login_data', array('id'=>$this->login_model->refreshToken($result->id)));
 				return $result->id;
 			}
@@ -37,10 +44,13 @@ class Login_model extends CI_Model {
 	}
 	
 	public function isAuthenticated(){
-		if($data = $this->session->userdata('login_data')){
-			$query = $this->db->query('SELECT * FROM `token` WHERE `id` = ?', array($data['id']));
+		$data = $this->session->userdata('login_data');
+		$sid = $this->session->userdata('session_id');
+		if(isset($data) && isset($sid)){
+			$query = $this->db->query('SELECT * FROM `token` WHERE `id` = ? AND `session` = ?', array($data['id'], $sid));
 			if($query->num_rows() == 1){
 				$result = $query->row();
+				$this->token = $result->token;
 				$ts = new DateTime($result->timestamp);
 				$now = new DateTime();
 				if(($now->getTimestamp() - $ts->getTimestamp()) >= 1440){
@@ -59,8 +69,10 @@ class Login_model extends CI_Model {
 	public function revokeToken(){
 		if($this->session->userdata('login_data')){
 			$data = $this->session->userdata('login_data');
-			$this->db->query('DELETE FROM `token` WHERE `id` = ?', array($data['id']));
+			$sid = $this->session->userdata('session_id');
+			$this->db->query('DELETE FROM `token` WHERE `id` = ? AND `session` = ?', array($data['id'], $sid));
 			$this->session->unset_userdata('login_data');
+			//$this->session->destroy_session();
 		}
 	}
 }

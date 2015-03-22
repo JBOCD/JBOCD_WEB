@@ -15,6 +15,7 @@ class Googledrive {
 	private $client;
 	private $drive;
 
+	protected $lid;
 	protected $db;
 	protected $statusCode;
 	
@@ -31,10 +32,19 @@ class Googledrive {
 		$this->client->setRedirectUri(urldecode(str_replace('http://', 'https://', site_url('main/returnAdd/googledrive'))));
 		
 		$this->statusCode = array('Deactivated', 'Normal', 'Disabled');
+
+		if($q = $this->db->query("SELECT * FROM `libraries` WHERE `dir` = 'googledrive'")){
+			if ($q->num_rows() > 0){
+				$row = $q->row();
+			}else{
+				throw new Exception("Cannot find google drive library record in database.", 1);
+			}
+			$this->lid = $row->id;
+		}
 	}
 	
-	public function getAccountView(){
-		$result = $this->db->query('SELECT * FROM `googledrive`');
+	public function getAccountView($uid){
+		$result = $this->db->query('SELECT * FROM `googledrive` WHERE `id` IN (SELECT `cdid` FROM `clouddrive` WHERE `uid` = ? AND `lid` = ?)', array($uid, $this->lid));
 		if($result->num_rows() <= 0){
 			$account = false;
 		}else{
@@ -103,6 +113,7 @@ class Googledrive {
 			}
 			$this->db->trans_start();
 			$this->db->delete('googledrive', array('id' => $id));
+			$this->db->delete('clouddrive', array('cdid' => $id));
 			$this->db->trans_complete();
 			if ($this->db->trans_status() === FALSE){
 				echo "This transaction goes wrong!";
@@ -127,7 +138,7 @@ class Googledrive {
 		redirect('main/module/googledrive');
 	}
 	
-	public function proc($request){
+	public function proc($request, $uid){
 		
 		$this->client->setRedirectUri(urldecode(str_replace('http://', 'https://', site_url('main/returnAdd/googledrive'))));
 		$credentials = $this->client->authenticate();
@@ -140,7 +151,8 @@ class Googledrive {
 
 		$q = $this->db->query("SELECT * FROM `googledrive` WHERE `userid` = ?", array($userInfo->email));
 		$this->db->trans_start();
-		$this->db->replace('googledrive', array('key'=>$credentials, 'userid'=>$userInfo->email, 'status'=>1));
+		$this->db->replace('clouddrive', array('lid'=>$this->lid, 'uid'=>$uid));
+		$this->db->replace('googledrive', array('id'=>$this->db->insert_id(), 'key'=>$credentials, 'userid'=>$userInfo->email, 'status'=>1));
 		$this->db->trans_complete();
 		if ($this->db->trans_status() === FALSE){
 			echo "This transaction goes wrong!";
@@ -160,7 +172,32 @@ class Googledrive {
 		$this->db->query('DELETE FROM `libraries` WHERE `dir` = ?', array('googledrive'));
 		return true;
 	}
-	
+
+	public function getDrivesInfo($id){
+		$result = $this->db->query('SELECT * FROM `googledrive` WHERE `id` = ?', array($id));
+		try{
+			$row = $result->row();
+			$apiClient = new Google_Client();
+			$apiClient->setUseObjects(true);
+			$apiClient->setAccessToken($row->key);
+			$drive = new Google_DriveService($apiClient);
+			$about = $drive->about->get();
+			return array(
+				'id'=>$id,
+				'quota'=>round($about->getQuotaBytesTotal()/1073741824, 2, PHP_ROUND_HALF_DOWN), 
+				'available'=>round(($about->getQuotaBytesTotal()-$about->getQuotaBytesUsed())/1073741824, 2, PHP_ROUND_HALF_DOWN), 
+				'name'=>$row->userid,
+				'status'=>true);
+		}catch(Exception $e){
+			//$this->dise($row['id']);
+			return array(
+				'id'=>$id,
+				'quota'=>0, 
+				'available'=>0, 
+				'name'=>$row->userid,
+				'status'=>false);;
+		}
+	}
 }
 
 ?>

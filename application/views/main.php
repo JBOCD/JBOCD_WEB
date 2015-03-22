@@ -25,15 +25,15 @@
     <script src="<?php echo asset_url(); ?>js/prettify/prettify.js"></script>
 
     <!-- Metro UI CSS JavaScript plugins -->
-	<script>
-		$(function(){
-			if ((document.location.host.indexOf('.dev') > -1) || (document.location.host.indexOf('modernui') > -1) ) {
-				$("<script/>").attr('src', '<?php echo asset_url(); ?>js/metro/metro-loader.js').appendTo($('head'));
-			} else {
-				$("<script/>").attr('src', '<?php echo asset_url(); ?>js/metro.min.js').appendTo($('head'));
-			}
-		})
-	</script>
+    <script>
+        $(function(){
+            if ((document.location.host.indexOf('.dev') > -1) || (document.location.host.indexOf('modernui') > -1) ) {
+                $("<script/>").attr('src', '<?php echo asset_url(); ?>js/metro/metro-loader.js').appendTo($('head'));
+            } else {
+                $("<script/>").attr('src', '<?php echo asset_url(); ?>js/metro.min.js').appendTo($('head'));
+            }
+        })
+    </script>
 
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -53,6 +53,8 @@
 
     </div>
     <!-- /#wrapper -->
+
+    
 
 </body>
 
