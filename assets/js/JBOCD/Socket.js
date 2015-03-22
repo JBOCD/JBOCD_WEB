@@ -88,7 +88,7 @@ window.JBOCD.Socket = (function (){
 				JBOCD.Network.byteToBytes(0x00),
 				JBOCD.Network.byteToBytes(opID),
 				JBOCD.Network.intToBytes(uid),
-				JBOCD.Network.charsToBytes(token.slice(0,32)).subarray(1, 33)
+				JBOCD.Network.charsToBytes(token.slice(0,128)).subarray(1, 129)
 			]), 0);
 		}
 		return opID;
