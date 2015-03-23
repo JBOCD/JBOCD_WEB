@@ -39,7 +39,7 @@ window.JBOCD.Network = (function (){
 		start = !start? 0 : start;
 		var size = this.toByte(arrayBuffer, start);
 		if(arrayBuffer.byteLength >= start+size+1){
-			return textDecoder.decode(arrayBuffer.subarray(start+1, size));
+			return textDecoder.decode(arrayBuffer.slice(start+1, size));
 		}
 		return 0;
 	}

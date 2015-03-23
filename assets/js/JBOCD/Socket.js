@@ -321,7 +321,7 @@ window.JBOCD.Socket = (function (){
 					size : JBOCD.Network.toLong(this.result, shift+8),
 					name : JBOCD.Network.toString(this.result, shift+16)
 				}
-				shift+=20+res.ldList[i].name.length;
+				shift+=19+res.ldList[i].name.length;
 				res.ldList[i].numOfCD = JBOCD.Network.toShort(this.result, shift-2);
 				res.ldList[i].cdList = [];
 				for(var j=0;j<res.ldList[i].numOfCD; j++, shift+=12){
@@ -347,14 +347,14 @@ window.JBOCD.Socket = (function (){
 			res.fileList = new Array(res.numOfFile);
 			shift = 4;
 		}
-		if((i=res.cdList.findIndex(isNull)) >= 0){
+		if((i=res.fileList.findIndex(isNull)) >= 0){
 			for(;i<res.numOfLD;i++){
 				res.fileList[i] = {
 					fID : JBOCD.Network.toLong(this.result, shift),
 					size : JBOCD.Network.toLong(this.result, shift+8),
 					name : JBOCD.Network.toString(this.result, shift+16)
 				}
-				shift+=18+res.list[i].name.length;
+				shift+=17+res.list[i].name.length;
 			}
 		}
 		if(i<0 || i>=res.numOfFile){
