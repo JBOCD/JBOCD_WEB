@@ -348,7 +348,7 @@ window.JBOCD.Socket = (function (){
 			shift = 4;
 		}
 		if((i=res.fileList.findIndex(isNull)) >= 0){
-			for(;i<res.numOfLD;i++){
+			for(;i<res.numOfFile;i++){
 				res.fileList[i] = {
 					fID : JBOCD.Network.toLong(this.result, shift),
 					size : JBOCD.Network.toLong(this.result, shift+8),
