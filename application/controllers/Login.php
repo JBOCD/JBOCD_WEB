@@ -2,6 +2,11 @@
 
 class Login extends CI_Controller {
 
+	public function __construct(){
+		parent::__construct();
+		session_start();
+	}
+
 	public function index(){
 		$this->load->model('login_model');
 		if($id = $this->login_model->isAuthenticated()){
@@ -22,8 +27,11 @@ class Login extends CI_Controller {
 	public function authenticate(){
 		$this->load->model('login_model');
 		$this->login_model->authenticate($_POST['login'], $_POST['pw']);
-		$this->login_model->isAuthenticated();
-		$this->index();
+		if($this->login_model->isAuthenticated()){
+			$this->index();
+		}
+
+		
 	}
 	
 }
