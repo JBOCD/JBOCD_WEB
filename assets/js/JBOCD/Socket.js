@@ -313,7 +313,7 @@ window.JBOCD.Socket = (function (){
 			res.ldList = new Array(res.numOfLD);
 			shift = 4;
 		}
-		if((i=res.cdList.findIndex(isNull)) >= 0){
+		if((i=res.ldList.findIndex(isNull)) >= 0){
 			for(;i<res.numOfLD;i++){
 				res.ldList[i] = {
 					ldID : JBOCD.Network.toInt(this.result, shift),
