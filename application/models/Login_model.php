@@ -53,7 +53,7 @@ class Login_model extends CI_Model {
 				$this->token = $result->token;
 				$ts = new DateTime($result->timestamp);
 				$now = new DateTime();
-				if(($now->getTimestamp() - $ts->getTimestamp()) >= 1440){
+				if(($now->getTimestamp() - $ts->getTimestamp()) >= 3600){
 					return false;
 				}else{
 					return $data['id'];
