@@ -172,7 +172,32 @@ class Googledrive {
 		$this->db->query('DELETE FROM `libraries` WHERE `dir` = ?', array('googledrive'));
 		return true;
 	}
-	
+
+	public function getDrivesInfo($id){
+		$result = $this->db->query('SELECT * FROM `googledrive` WHERE `id` = ?', array($id));
+		try{
+			$row = $result->row();
+			$apiClient = new Google_Client();
+			$apiClient->setUseObjects(true);
+			$apiClient->setAccessToken($row->key);
+			$drive = new Google_DriveService($apiClient);
+			$about = $drive->about->get();
+			return array(
+				'id'=>$id,
+				'quota'=>round($about->getQuotaBytesTotal()/1073741824, 2, PHP_ROUND_HALF_DOWN), 
+				'available'=>round(($about->getQuotaBytesTotal()-$about->getQuotaBytesUsed())/1073741824, 2, PHP_ROUND_HALF_DOWN), 
+				'name'=>$row->userid,
+				'status'=>true);
+		}catch(Exception $e){
+			//$this->dise($row['id']);
+			return array(
+				'id'=>$id,
+				'quota'=>0, 
+				'available'=>0, 
+				'name'=>$row->userid,
+				'status'=>false);;
+		}
+	}
 }
 
 ?>
