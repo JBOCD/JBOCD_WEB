@@ -50,6 +50,7 @@ window.JBOCD.Socket = (function (){
 				console.log("JBOCD.Socket.init(): Missing delFileCallback or delFileCallback is not a function.");
 				return ;
 			}
+			delFileCB = delFileCallback;
 			operation = operation ? operation : new Array(256);
 			operation[255] = { request: { cb: delFileCallback } };
 			socket = new WebSocket("wss://"+window.location.hostname+":9443", "JBOCD");
@@ -226,7 +227,7 @@ window.JBOCD.Socket = (function (){
 		}
 		return opID;
 	}
-	Socket.prototype.delFile = function(callback, logicalDriveID, fileID){
+	Socket.prototype.delFile = function(logicalDriveID, fileID){
 		send(new Blob([
 			JBOCD.Network.byteToBytes(0x28),
 			JBOCD.Network.byteToBytes(255),
