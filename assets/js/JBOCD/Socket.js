@@ -36,7 +36,7 @@ window.JBOCD.Socket = (function (){
 			sendTimer = setTimeout(send, 100); // this time can be approximate by thoughput ( (remain byte prev - remain byte now) / time)
 		}
 	}
-	var operation = new Array(256);
+	var operation;
 /*	var operation = [
 		{
 			request : {},
@@ -50,6 +50,7 @@ window.JBOCD.Socket = (function (){
 				console.log("JBOCD.Socket.init(): Missing delFileCallback or delFileCallback is not a function.");
 				return ;
 			}
+			operation = operation ? operation : new Array(256);
 			operation[255] = { request: { cb: delFileCallback } };
 			socket = new WebSocket("wss://"+window.location.hostname+":9443", "JBOCD");
 			socket.bunaryType = Blob;
@@ -63,10 +64,11 @@ window.JBOCD.Socket = (function (){
 				fileReader.blob = evt.data;
 				fileReader.readAsArrayBuffer(evt.data.slice(0,2));
 			}
-			socket.onend = function(){
+			socket.onend = socket.onclose = function(){
 				console.log("WebSocket: End Connect");
 				socket = null;
 			}
+			socket.onerror = Socket.close();
 		}else{
 			console.log("WebSocket: Already Started.");
 		}
@@ -74,6 +76,7 @@ window.JBOCD.Socket = (function (){
 	Socket.prototype.close = function(){
 		socket.close();
 		socket = null;
+		for(var i=0; i<256; i++) delete operation[i];
 	}
 	Socket.prototype.login = function(uid, token){
 		var opID = operation.findIndex(isNull);
@@ -354,7 +357,7 @@ window.JBOCD.Socket = (function (){
 					size : JBOCD.Network.toLong(this.result, shift+8),
 					name : JBOCD.Network.toString(this.result, shift+16)
 				}
-				shift+=17+res.list[i].name.length;
+				shift+=17+res.fileList[i].name.length;
 			}
 		}
 		if(i<0 || i>=res.numOfFile){
