@@ -70,10 +70,12 @@ window.JBOCD.Socket = (function (){
 		}
 	}
 	Socket.prototype.close = function(){
-		console.log("WebSocket: End Connect");
-		socket.close();
-		socket = null;
-		for(var i=0; i<256; i++) delete operation[i];
+		if(socket){
+			console.log("WebSocket: End Connect");
+			socket.close();
+			socket = null;
+			for(var i=0; i<256; i++) delete operation[i];
+		}
 	}
 	Socket.prototype.login = function(uid, token){
 		var opID = operation.findIndex(isNull);
