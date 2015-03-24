@@ -68,7 +68,7 @@ window.JBOCD.Socket = (function (){
 				console.log("WebSocket: End Connect");
 				socket = null;
 			}
-			socket.onerror = this.close();
+			socket.onerror = this.close;
 		}else{
 			console.log("WebSocket: Already Started.");
 		}
