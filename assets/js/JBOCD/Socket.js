@@ -64,16 +64,13 @@ window.JBOCD.Socket = (function (){
 				fileReader.blob = evt.data;
 				fileReader.readAsArrayBuffer(evt.data.slice(0,2));
 			}
-			socket.onend = socket.onclose = function(){
-				console.log("WebSocket: End Connect");
-				socket = null;
-			}
-			socket.onerror = this.close;
+			socket.onerror = socket.onend = socket.onclose = this.close;
 		}else{
 			console.log("WebSocket: Already Started.");
 		}
 	}
 	Socket.prototype.close = function(){
+		console.log("WebSocket: End Connect");
 		socket.close();
 		socket = null;
 		for(var i=0; i<256; i++) delete operation[i];
