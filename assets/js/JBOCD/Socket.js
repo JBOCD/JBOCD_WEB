@@ -199,6 +199,7 @@ window.JBOCD.Socket = (function (){
 				JBOCD.Network.longToBytes(fileID),
 				JBOCD.Network.intToBytes(seqNum),
 				JBOCD.Network.charsToBytes(""), // name is do nothing
+				JBOCD.Network.intToBytes(blob.size),
 				blob
 			]), 1);
 		}
