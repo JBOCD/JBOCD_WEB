@@ -272,7 +272,7 @@ window.JBOCD.Socket = (function (){
 				fileReader(processCreateFile, this.blob);
 				break;
 			case 0x21:
-				fileReader(processPutChunkInfo, this.blob);
+				fileReader(processPutChunk, this.blob);
 				break;
 			case 0x22:
 				fileReader(processGetChunkInfo, this.blob);
