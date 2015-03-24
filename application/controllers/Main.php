@@ -15,8 +15,12 @@ class Main extends CI_Controller {
 		session_start();
 		$this->load->model('view_model');
 		$this->load->model('login_model');
-		if(!$this->login_model->isAuthenticated()) return redirect('login/index', 'location');
-		$this->login_model->refreshToken($this->session->userdata('login_data'));
+		if(!$this->login_model->isAuthenticated()) {
+			return redirect('login/index', 'location');
+		}else{
+			$this->login_model->refreshToken($this->session->userdata('login_data'));
+		} //
+		
 	}
 
 	public function index(){

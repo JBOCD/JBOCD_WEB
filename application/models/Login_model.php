@@ -17,11 +17,13 @@ class Login_model extends CI_Model {
 	}
 	
 	public function refreshToken($id){
-		$this->db->query('REPLACE INTO `token` (`id`,`timestamp`, `token`, `session`) VALUES(?, CURRENT_TIMESTAMP, ?, ?)', array($id, $this->token, $this->session->userdata('session_id')));
+		$this->db->query(
+			'REPLACE INTO `token` (`id`,`timestamp`, `token`, `session`) VALUES(?, CURRENT_TIMESTAMP, ?, ?)', 
+			array($id, $this->token, session_id()));
 		return $id;
 	}
 	
-	public function authenticate($login, $pw){
+	public function authenticate($login, $pw, $session_id){
 		if(!isset($login) || !isset($pw) || ($login == '') || ($pw=='')) {
 			$this->session->set_userdata('login_error', array('message'=>'Login error!'));
 			return -2;
@@ -45,7 +47,7 @@ class Login_model extends CI_Model {
 	
 	public function isAuthenticated(){
 		$data = $this->session->userdata('login_data');
-		$sid = $this->session->userdata('session_id');
+		$sid = session_id();
 		if(isset($data) && isset($sid)){
 			$query = $this->db->query('SELECT * FROM `token` WHERE `id` = ? AND `session` = ?', array($data['id'], $sid));
 			if($query->num_rows() == 1){
@@ -69,7 +71,7 @@ class Login_model extends CI_Model {
 	public function revokeToken(){
 		if($this->session->userdata('login_data')){
 			$data = $this->session->userdata('login_data');
-			$sid = $this->session->userdata('session_id');
+			$sid = session_id();
 			$this->db->query('DELETE FROM `token` WHERE `id` = ? AND `session` = ?', array($data['id'], $sid));
 			$this->session->unset_userdata('login_data');
 			//$this->session->destroy_session();
