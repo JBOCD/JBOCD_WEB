@@ -47,13 +47,14 @@ window.JBOCD.Network = (function (){
 		return new Uint8Array([val]);
 	}
 	Network.prototype.shortToBytes = function(val){
-		return new Uint8Array([val >> 8, val]);
+		return new Uint8Array([val >>> 8, val]);
 	}
 	Network.prototype.intToBytes = function(val){
-		return new Uint8Array([val >> 24, val >> 16, val >> 8, val]);
+		return new Uint8Array([val >>> 24, val >>> 16, val >>> 8, val]);
 	}
 	Network.prototype.longToBytes = function(val){
-		return new Uint8Array([val >> 56, val >> 48, val >> 40, val >> 32, val >> 24, val >> 16, val >> 8, val]);
+		var val1 = Math.floor(val1 / 4294967296);
+		return new Uint8Array([val1 >>> 24, val1 >>> 16, val1 >>> 8, val1, val >>> 24, val >>> 16, val >>> 8, val]);
 	}
 	Network.prototype.charsToBytes = function(str){
 		var strarr = textEncoder.encode("0"+str);

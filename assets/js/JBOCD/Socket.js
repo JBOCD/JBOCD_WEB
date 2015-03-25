@@ -50,6 +50,7 @@ window.JBOCD.Socket = (function (){
 				console.log("JBOCD.Socket.init(): Missing delFileCallback or delFileCallback is not a function.");
 				return ;
 			}
+			delFileCB = delFileCallback;
 			operation = operation ? operation : new Array(256);
 			operation[255] = { request: { cb: delFileCallback } };
 			socket = new WebSocket("wss://"+window.location.hostname+":9443", "JBOCD");
@@ -64,19 +65,18 @@ window.JBOCD.Socket = (function (){
 				fileReader.blob = evt.data;
 				fileReader.readAsArrayBuffer(evt.data.slice(0,2));
 			}
-			socket.onend = socket.onclose = function(){
-				console.log("WebSocket: End Connect");
-				socket = null;
-			}
-			socket.onerror = this.close;
+			socket.onerror = socket.onend = socket.onclose = this.close;
 		}else{
 			console.log("WebSocket: Already Started.");
 		}
 	}
 	Socket.prototype.close = function(){
-		socket.close();
-		socket = null;
-		for(var i=0; i<256; i++) delete operation[i];
+		if(socket){
+			console.log("WebSocket: End Connect");
+			socket.close();
+			socket = null;
+			for(var i=0; i<256; i++) delete operation[i];
+		}
 	}
 	Socket.prototype.login = function(uid, token){
 		var opID = operation.findIndex(isNull);
@@ -200,6 +200,7 @@ window.JBOCD.Socket = (function (){
 				JBOCD.Network.longToBytes(fileID),
 				JBOCD.Network.intToBytes(seqNum),
 				JBOCD.Network.charsToBytes(""), // name is do nothing
+				JBOCD.Network.intToBytes(blob.size),
 				blob
 			]), 1);
 		}
@@ -226,7 +227,7 @@ window.JBOCD.Socket = (function (){
 		}
 		return opID;
 	}
-	Socket.prototype.delFile = function(callback, logicalDriveID, fileID){
+	Socket.prototype.delFile = function(logicalDriveID, fileID){
 		send(new Blob([
 			JBOCD.Network.byteToBytes(0x28),
 			JBOCD.Network.byteToBytes(255),
@@ -273,7 +274,7 @@ window.JBOCD.Socket = (function (){
 				fileReader(processCreateFile, this.blob);
 				break;
 			case 0x21:
-				fileReader(processPutChunkInfo, this.blob);
+				fileReader(processPutChunk, this.blob);
 				break;
 			case 0x22:
 				fileReader(processGetChunkInfo, this.blob);
