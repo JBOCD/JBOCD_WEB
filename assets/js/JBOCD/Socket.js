@@ -9,7 +9,7 @@ window.JBOCD.Socket = (function (){
 		}
 	}
 	var socket;
-	var delFileCB;
+	var delFileCB = function(e) { console.log(e) };
 	var Socket = function (){};
 	var fileReader = function (cb, blob, len){
 		var fr = new FileReader();
@@ -37,6 +37,7 @@ window.JBOCD.Socket = (function (){
 		}
 	}
 	var operation;
+	// index 255 is reserved for delete file
 /*	var operation = [
 		{
 			request : {},
@@ -44,20 +45,21 @@ window.JBOCD.Socket = (function (){
 		}, ...
 	];
 */
-	Socket.prototype.init = function(delFileCallback){
+	Socket.prototype.init = function(openedCallback){
 		if(!socket){
-			if(!delFileCallback || delFileCallback.constructor !== Function){
-				console.log("JBOCD.Socket.init(): Missing delFileCallback or delFileCallback is not a function.");
+			if(!openedCallback || openedCallback.constructor !== Function){
+				console.log("JBOCD.Socket.init(): Missing callback or callback is not a function.");
 				return ;
 			}
-			delFileCB = delFileCallback;
+			var cb = openedCallback;
 			operation = operation ? operation : new Array(256);
-			operation[255] = { request: { cb: delFileCallback } };
+			operation[255] = true;
 			socket = new WebSocket("wss://"+window.location.hostname+":9443", "JBOCD");
 			socket.bunaryType = Blob;
 			socket.onopen = function(){
 				console.log("WebSocket: Start Connect");
 				//send suid, token
+				cb();
 			}
 			socket.onmessage = function(evt){
 				var fileReader = new FileReader();
@@ -69,6 +71,14 @@ window.JBOCD.Socket = (function (){
 		}else{
 			console.log("WebSocket: Already Started.");
 		}
+	}
+	Socket.prototype.setDelFileCallback = function(delFileCallback){
+		if(!delFileCallback || delFileCallback.constructor !== Function){
+			console.log("JBOCD.Socket.init(): Missing delFileCallback or delFileCallback is not a function.");
+			return false;
+		}
+		delFileCB = delFileCallback;
+		return true;
 	}
 	Socket.prototype.close = function(){
 		if(socket){
