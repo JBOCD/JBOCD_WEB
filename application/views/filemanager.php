@@ -24,10 +24,20 @@
 				fd.jQuery();
 				var zone;
 				var CSRF = '<?php echo $CSRF; ?>';
+				var workers = [];
+
+				var code = "raid5.js";
+				var numOfDrive = 4,
+					blockSize = 4096;
+				var config = [numOfDrive, blockSize];
 
 				function readfiles(files) {
 					for (var i = 0; i < files.length; i++) {
-						console.log(files[i]);
+						workers[i] = new Worker('<?php echo asset_url(); ?>algo/worker.js');
+						workers[i].postMessage([code, [4, 1024*1024], files[i].nativeFile, ['encode', i]]);
+						workers[i].onmessage = function(e){
+							if(e.data[2] % 100 == 0) console.log(e.data[2]);
+						};
 					}
 				}
 
@@ -78,9 +88,10 @@
 				        	$('#holder')
 				        		.filedrop({multiple: true})
 				        		.on('fdsend', function(e, files){
-				        			console.log(files);
+				        			readfiles(files);
 				        		});
 				        }
 				    });
 				});
 			</script>
+			
