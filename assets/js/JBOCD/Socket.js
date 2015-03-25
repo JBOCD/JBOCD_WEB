@@ -331,7 +331,7 @@ window.JBOCD.Socket = (function (){
 				for(var j=0;j<res.ldList[i].numOfCD; j++, shift+=12){
 					res.ldList[i].cdList.push({
 						cdID : JBOCD.Network.toInt(this.result, shift),
-						size : JBOCD.Network.toInt(this.result, shift+4)
+						size : JBOCD.Network.toLong(this.result, shift+4)
 					});
 				}
 			}
