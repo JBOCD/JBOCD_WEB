@@ -412,7 +412,8 @@ window.JBOCD.Socket = (function (){
 			};
 			var i;
 			seqInfo.getSize += thisSize;
-			seqInfo.isError |= this.blob.size - 14 == thisSize;
+			seqInfo.isEnd = seqInfo.isEnd || (this.blob.size == 14) || (seqInfo.getSize == seqInfo.size);
+			seqInfo.isError |= seqInfo.isEnd && (seqInfo.getSize != seqInfo.size);
 			for(i=0; blobInfo.start < seqInfo.blobList[i].start || i < seqInfo.blobList.length; i++);
 			seqInfo.blobList.splice(i,0,blobInfo);
 		}else{
@@ -428,11 +429,12 @@ window.JBOCD.Socket = (function (){
 					}
 				],
 				getSize: thisSize,
-				isError: this.blob.size - 14 == thisSize
+				isEnd: (this.blob.size - 14 == thisSize) || (this.blob.size == 14)
 			}
+			res.chunkList[seqNum].isError = seqInfo.isEnd && (seqInfo.getSize != seqInfo.size);
 
 		}
-		if(res.chunkList[seqNum].getSize >= res.chunkList[seqNum].size){
+		if(res.chunkList[seqNum].isEnd){
 			!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
 			if(res.chunkList.findIndex(isNull) < 0){
 				delete operation[opID];
