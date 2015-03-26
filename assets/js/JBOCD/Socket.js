@@ -413,7 +413,7 @@ window.JBOCD.Socket = (function (){
 			var i;
 			seqInfo.getSize += thisSize;
 			seqInfo.isEnd = seqInfo.isEnd || (this.blob.size == 14) || (seqInfo.getSize == seqInfo.size);
-			seqInfo.isError |= seqInfo.isEnd && (seqInfo.getSize != seqInfo.size);
+			seqInfo.isError = seqInfo.isError || ( seqInfo.isEnd && (seqInfo.getSize != seqInfo.size) );
 			for(i=0; blobInfo.start < seqInfo.blobList[i].start || i < seqInfo.blobList.length; i++);
 			seqInfo.blobList.splice(i,0,blobInfo);
 		}else{
@@ -431,7 +431,7 @@ window.JBOCD.Socket = (function (){
 				getSize: thisSize,
 				isEnd: (this.blob.size - 14 == thisSize) || (this.blob.size == 14)
 			}
-			res.chunkList[seqNum].isError = seqInfo.isEnd && (seqInfo.getSize != seqInfo.size);
+			res.chunkList[seqNum].isError = this.blob.size == 14;
 
 		}
 		if(res.chunkList[seqNum].isEnd){
