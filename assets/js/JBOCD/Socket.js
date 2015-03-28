@@ -95,7 +95,7 @@ window.JBOCD.Socket = (function (){
 				request : {
 					command: 0x00,
 					opID: opID,
-					cd: callback
+					cb: callback
 				}
 			}
 			send(new Blob([
