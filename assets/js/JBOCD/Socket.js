@@ -88,13 +88,14 @@ window.JBOCD.Socket = (function (){
 			for(var i=0; i<256; i++) delete operation[i];
 		}
 	}
-	Socket.prototype.login = function(uid, token){
+	Socket.prototype.login = function(uid, token, callback){
 		var opID = operation.findIndex(isNull);
 		if(opID >= 0){
 			operation[opID] = {
 				request : {
 					command: 0x00,
-					opID: opID
+					opID: opID,
+					cd: callback
 				}
 			}
 			send(new Blob([
@@ -140,7 +141,7 @@ window.JBOCD.Socket = (function (){
 		}
 		return opID;
 	}
-	Socket.prototype.list = function(callback, logicalDriveID, parentID){
+	Socket.prototype.list = function(logicalDriveID, parentID, callback){
 		var opID = operation.findIndex(isNull);
 		if(opID >= 0){
 			operation[opID] = {
@@ -161,7 +162,7 @@ window.JBOCD.Socket = (function (){
 		}
 		return opID;
 	}
-	Socket.prototype.createFile = function(callback, logicalDriveID, parentID, fileSize, name){
+	Socket.prototype.createFile = function(logicalDriveID, parentID, fileSize, name, callback){
 		var opID = operation.findIndex(isNull);
 		if(opID >= 0){
 			operation[opID] = {
@@ -186,7 +187,7 @@ window.JBOCD.Socket = (function (){
 		}
 		return opID;
 	}
-	Socket.prototype.putChunk = function(callback, logicalDriveID, cloudDriveID, fileID, seqNum, name, blob){
+	Socket.prototype.putChunk = function(logicalDriveID, cloudDriveID, fileID, seqNum, name, blob, callback){
 		var opID = operation.findIndex(isNull);
 		if(opID >= 0){
 			operation[opID] = {
@@ -216,7 +217,7 @@ window.JBOCD.Socket = (function (){
 		}
 		return opID;
 	}
-	Socket.prototype.getFile = function(callback, logicalDriveID, fileID){
+	Socket.prototype.getFile = function(logicalDriveID, fileID, callback){
 		var opID = operation.findIndex(isNull);
 		if(opID >= 0){
 			operation[opID] = {
