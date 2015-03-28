@@ -7,7 +7,7 @@
                 </div>
             </div>
 
-            <div class="row">
+            <div class="row" id="fileControl">
             	<button class="primary" id="upload">Upload</button>
 	            <button class="primary">New folder</button>
 	            <button class="danger">Delete</button>
@@ -21,6 +21,7 @@
 			<script src="<?php echo asset_url(); ?>js/metro/metro-input-control.js"></script>
 			<script src="<?php echo asset_url(); ?>js/filedrop.js"></script>
 			<script type="text/javascript">
+				$('#fileControl').hide();
 				fd.jQuery();
 				var zone;
 				var workers = [];
@@ -52,12 +53,8 @@
 				    $('#fileTable').dataTable( {
 				        "data": data,
 				        "columns": [
-				            { "title": "Column A" },
-				            { "title": "Column B" },
-				            { "title": "Column C" },
-				            { "title": "Column D", "class": "center" },
-				            { "title": "Column E", "class": "center" },
-				            { "title": "Column F", "class": "center" },
+				            { "title": "Filename" },
+				            { "title": "Size" },
 				            {
 				                "className":      'details-control',
 				                "orderable":      false,
@@ -94,8 +91,25 @@
 				});
 			</script>
 			<script type="text/javascript">
-				var ldid = '<?php echo $ldid; ?>';
+				var uid = <?php echo $uid; ?>;
+				var ldid = <?php echo $ldid; ?>;
 				var CSRF = '<?php echo $CSRF; ?>';
-				
+
+				JBOCD.Socket.init(function(e){
+					console.log("JBOCD connected!");
+					var loginOp = JBOCD.Socket.login(uid, CSRF, function(e){
+						console.log("JBOCD authenticated!");
+						JBOCD.Socket.list(ldid, 0, refreshFilelist);
+						$('#fileControl').show();
+					});
+				});
+
+				//File array = [name, size]
+				var refreshFilelist = function(e){
+					var fileList = e.response.fileList;
+					console.log(fileList);
+				}
+
+
 			</script>
 			
