@@ -31,7 +31,7 @@ window.JBOCD.Network = (function (){
 		start = !start? 0 : start;
 		if(arrayBuffer.byteLength >= start+8){
 			var val = new Uint8Array(arrayBuffer.slice(start+0,start+8));
-			return val[0] << 56 | val[1] << 48 | val[2] << 40 | val[3] << 32 | val[4] << 24 | val[5] << 16 | val[6] << 8 | val[7];
+			return (val[0] << 24 | val[1] << 16 | val[2] << 8 | val[3] ) * 4294967296 + val[4] << 24 | val[5] << 16 | val[6] << 8 | val[7];
 		}
 		return 0;
 	}

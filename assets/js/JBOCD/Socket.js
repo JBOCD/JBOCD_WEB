@@ -9,7 +9,7 @@ window.JBOCD.Socket = (function (){
 		}
 	}
 	var socket;
-	var delFileCB;
+	var delFileCB = function(e) { console.log(e) };
 	var Socket = function (){};
 	var fileReader = function (cb, blob, len){
 		var fr = new FileReader();
@@ -37,6 +37,7 @@ window.JBOCD.Socket = (function (){
 		}
 	}
 	var operation;
+	// index 255 is reserved for delete file
 /*	var operation = [
 		{
 			request : {},
@@ -44,20 +45,21 @@ window.JBOCD.Socket = (function (){
 		}, ...
 	];
 */
-	Socket.prototype.init = function(delFileCallback){
+	Socket.prototype.init = function(openedCallback){
 		if(!socket){
-			if(!delFileCallback || delFileCallback.constructor !== Function){
-				console.log("JBOCD.Socket.init(): Missing delFileCallback or delFileCallback is not a function.");
+			if(!openedCallback || openedCallback.constructor !== Function){
+				console.log("JBOCD.Socket.init(): Missing callback or callback is not a function.");
 				return ;
 			}
-			delFileCB = delFileCallback;
+			var cb = openedCallback;
 			operation = operation ? operation : new Array(256);
-			operation[255] = { request: { cb: delFileCallback } };
+			operation[255] = true;
 			socket = new WebSocket("wss://"+window.location.hostname+":9443", "JBOCD");
 			socket.bunaryType = Blob;
 			socket.onopen = function(){
 				console.log("WebSocket: Start Connect");
 				//send suid, token
+				cb();
 			}
 			socket.onmessage = function(evt){
 				var fileReader = new FileReader();
@@ -69,6 +71,14 @@ window.JBOCD.Socket = (function (){
 		}else{
 			console.log("WebSocket: Already Started.");
 		}
+	}
+	Socket.prototype.setDelFileCallback = function(delFileCallback){
+		if(!delFileCallback || delFileCallback.constructor !== Function){
+			console.log("JBOCD.Socket.init(): Missing delFileCallback or delFileCallback is not a function.");
+			return false;
+		}
+		delFileCB = delFileCallback;
+		return true;
 	}
 	Socket.prototype.close = function(){
 		if(socket){
@@ -331,7 +341,7 @@ window.JBOCD.Socket = (function (){
 				for(var j=0;j<res.ldList[i].numOfCD; j++, shift+=12){
 					res.ldList[i].cdList.push({
 						cdID : JBOCD.Network.toInt(this.result, shift),
-						size : JBOCD.Network.toInt(this.result, shift+4)
+						size : JBOCD.Network.toLong(this.result, shift+4)
 					});
 				}
 			}
@@ -402,7 +412,8 @@ window.JBOCD.Socket = (function (){
 			};
 			var i;
 			seqInfo.getSize += thisSize;
-			seqInfo.isError |= this.blob.size - 14 == thisSize;
+			seqInfo.isEnd = seqInfo.isEnd || (this.blob.size == 14) || (seqInfo.getSize == seqInfo.size);
+			seqInfo.isError = seqInfo.isError || ( seqInfo.isEnd && (seqInfo.getSize != seqInfo.size) );
 			for(i=0; blobInfo.start < seqInfo.blobList[i].start || i < seqInfo.blobList.length; i++);
 			seqInfo.blobList.splice(i,0,blobInfo);
 		}else{
@@ -418,11 +429,12 @@ window.JBOCD.Socket = (function (){
 					}
 				],
 				getSize: thisSize,
-				isError: this.blob.size - 14 == thisSize
+				isEnd: (this.blob.size - 14 == thisSize) || (this.blob.size == 14)
 			}
+			res.chunkList[seqNum].isError = this.blob.size == 14;
 
 		}
-		if(res.chunkList[seqNum].getSize >= res.chunkList[seqNum].size){
+		if(res.chunkList[seqNum].isEnd){
 			!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
 			if(res.chunkList.findIndex(isNull) < 0){
 				delete operation[opID];
