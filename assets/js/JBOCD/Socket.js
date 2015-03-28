@@ -397,6 +397,7 @@ window.JBOCD.Socket = (function (){
 		var opID = JBOCD.Network.toByte(this.result, 1);
 		var res = operation[opID].response;
 		res.numOfChunk = JBOCD.Network.toInt(this.result, 2);
+		res.size = JBOCD.Network.toLong(this.result, 6);
 		res.chunkList = new Array(res.numOfChunk);
 	}
 	var processGetChunk = function(){
