@@ -23,7 +23,6 @@
 			<script type="text/javascript">
 				fd.jQuery();
 				var zone;
-				var CSRF = '<?php echo $CSRF; ?>';
 				var workers = [];
 
 				var code = "raid5.js";
@@ -93,5 +92,10 @@
 				        }
 				    });
 				});
+			</script>
+			<script type="text/javascript">
+				var ldid = '<?php echo $ldid; ?>';
+				var CSRF = '<?php echo $CSRF; ?>';
+				
 			</script>
 			

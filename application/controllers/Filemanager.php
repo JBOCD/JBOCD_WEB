@@ -13,7 +13,7 @@ class Filemanager extends CI_Controller {
 		$this->login_model->refreshToken($this->session->userdata('login_data'));
 	}
 
-	public function index(){
-		$this->view_model->generateView($this->load->view('filemanager', array('CSRF'=>$this->login_model->getCSRF()), true));
+	public function index($ldid){
+		$this->view_model->generateView($this->load->view('filemanager', array('CSRF'=>$this->login_model->getCSRF(), 'ldid'=>$ldid), true));
 	}
 }
