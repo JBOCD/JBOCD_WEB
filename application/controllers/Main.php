@@ -163,6 +163,7 @@ class Main extends CI_Controller {
 	public function volume(){
 		$this->load->helper('form');
 		$this->load->model('volume_model');
+		$this->load->model('algorithm_model');
 		$drives = $this->volume_model->getVolumeList($this->session->userdata('login_data')['id']);
 		$content = array();
 		foreach($drives as $drive){
@@ -176,8 +177,82 @@ class Main extends CI_Controller {
 			));
 			unset($handler);
 		}
-		$this->view_model->generateView($this->load->view('volume', array('cloudDrives'=>$content), true));
+		$codes = array();
+		$algo = $this->algorithm_model->getAlgorithmList();
+		$this->view_model->generateView($this->load->view('volume', array('cloudDrives'=>$content, 'algo'=>$algo), true));
 		//$this->view_model->generateView($this->load->view('volume', array('cloudDrives'=>$content), true));
+	}
+
+	public function volumeAjax(){
+		$this->load->model('volume_model');
+		$this->load->model('algorithm_model');
+		$cdid = array();
+		$cd_vol = json_decode($_POST['inputSize'], true);
+		foreach ($_POST['drives'] as $checked) {
+			array_push($cdid, $checked);
+		}
+
+		$drives = $this->volume_model->getVolumeListByDrive($_POST['uid'], $cdid);
+		$algo = $this->algorithm_model->getAlgorithmById($_POST['algo']);
+
+		$input = array();
+		foreach($drives as $drive){
+			include_once($this->php_module_path.$drive->dir.'/'.$drive->dir.'.php');
+			$handler = new $drive->dir($this->db);
+			$info = $handler->getDrivesInfo($drive->cdid);
+			if($cd_vol[$info['id']] > $info['available']){
+				echo "\$cd_vol[\$info['id']]=".$cd_vol[$info['id']]." | \$info['available']=".$info['available'];
+				echo "You have entered a size larger than the available size that cloud drive can allocate.<br>";
+				return false;
+			}
+			array_push($input, array(
+				'size'=>$cd_vol[$info['id']]
+			));
+			unset($handler);
+		}
+
+		$validate = eval($algo[0]->validateScript);
+		if($validate['status'] != 0){
+			echo $validate['message']."<br>";
+		}else{
+			echo "Algorithm: ".$algo[0]->name."<br>";
+			echo "Maximum volume size: ".eval($algo[0]->sizeScript)." GB<br>";
+		}
+	}
+
+	public function createVolume(){
+		$this->load->model('volume_model');
+		$this->load->model('algorithm_model');
+		$cdid = array();
+		$cd_vol = json_decode($_POST['inputSize'], true);
+		foreach ($_POST['drives'] as $checked) {
+			array_push($cdid, $checked);
+		}
+
+		$drives = $this->volume_model->getVolumeListByDrive($_POST['uid'], $cdid);
+		$algo = $this->algorithm_model->getAlgorithmById($_POST['algo']);
+
+		$input = array();
+		foreach($drives as $drive){
+			include_once($this->php_module_path.$drive->dir.'/'.$drive->dir.'.php');
+			$handler = new $drive->dir($this->db);
+			$info = $handler->getDrivesInfo($drive->cdid);
+			if($cd_vol[$info['id']] > $info['available']){
+				echo json_encode(array('status'=>1, 'message'=>"You have entered a size larger than the available size that cloud drive can allocate"));
+				return false;
+			}
+			array_push($input, array(
+				'size'=>$cd_vol[$info['id']]
+			));
+			unset($handler);
+		}
+
+		$validate = eval($algo[0]->validateScript);
+		if($validate['status'] != 0){
+			return $validate;
+		}else{
+			$this->volume_model->createVolume($cd_vol, $_POST['algo'], $_POST['uid'], $_POST['name'], eval($algo[0]->sizeScript));
+		}
 	}
 
 }
