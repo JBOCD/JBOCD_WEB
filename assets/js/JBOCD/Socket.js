@@ -399,6 +399,12 @@ window.JBOCD.Socket = (function (){
 		res.numOfChunk = JBOCD.Network.toInt(this.result, 2);
 		res.size = JBOCD.Network.toLong(this.result, 6);
 		res.chunkList = new Array(res.numOfChunk);
+		if(res.numOfChunk === 0){
+			!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
+			if(res.chunkList.findIndex(isNull) < 0){
+				delete operation[opID];
+			}
+		}
 	}
 	var processGetChunk = function(){
 		var opID = JBOCD.Network.toByte(this.result, 1);
