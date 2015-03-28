@@ -26,32 +26,14 @@
 				var zone;
 				var workers = [];
 
-				var code = "raid5.js";
-				var numOfDrive = 4,
-					blockSize = 4096;
-				var config = [numOfDrive, blockSize];
-
-				function readfiles(files) {
-					for (var i = 0; i < files.length; i++) {
-						workers[i] = new Worker('<?php echo asset_url(); ?>algo/worker.js');
-						workers[i].postMessage([code, [4, 1024*1024], files[i].nativeFile, ['encode', i]]);
-						workers[i].onmessage = function(e){
-							if(e.data[2] % 100 == 0) console.log(e.data[2]);
-						};
-					}
-				}
-
 				$(document).ready(function() {
-					var data = [
-						[1,2,3,4,5,6],
-						[1,2,3,4,5,6],
-						[1,2,3,4,5,6],
-						[1,2,3,4,5,6],
-						[1,2,3,4,5,6]
-					];
+					var data = [];
 
 				    $('#fileTable').dataTable( {
 				        "data": data,
+				        "oLanguage": {
+							"sEmptyTable": "No file"
+						},
 				        "columns": [
 				            { "title": "Filename" },
 				            { "title": "Size" },
@@ -94,15 +76,10 @@
 				var uid = <?php echo $uid; ?>;
 				var ldid = <?php echo $ldid; ?>;
 				var CSRF = '<?php echo $CSRF; ?>';
-
-				JBOCD.Socket.init(function(e){
-					console.log("JBOCD connected!");
-					var loginOp = JBOCD.Socket.login(uid, CSRF, function(e){
-						console.log("JBOCD authenticated!");
-						JBOCD.Socket.list(ldid, 0, refreshFilelist);
-						$('#fileControl').show();
-					});
-				});
+				var script = '<?php echo $algo; ?>';
+				var dir = 0;
+				var drives;
+				var numOfDrive;
 
 				//File array = [name, size]
 				var refreshFilelist = function(e){
@@ -110,6 +87,42 @@
 					console.log(fileList);
 				}
 
+				var readfiles = function(files) {
+					for (var i = 0; i < files.length; i++) {
+						var file = files[i];
+						var f = function(e){
+							var workers = new Worker('<?php echo asset_url(); ?>algo/worker.js');
+							//console.log("POST:", [script, [numOfDrive, 1024*1024], file.nativeFile, ['encode', e.response.fID]]);
+							workers.postMessage([script, [numOfDrive, 1024*1024], file.nativeFile, ['encode', e.response.fID]]);
+							workers.onmessage = function(e){
+								console.log("PutChunk:", [ldid, drives[e.data[3]].cdID, e.data[1], e.data[2], '', e.data[0]]);
+								JBOCD.Socket.putChunk(ldid, drives[e.data[3]].cdID, e.data[1], e.data[2], '', e.data[0], function(e){
+									console.log("Fin Put chunk:", e);
+								});
+							}
+						};
+						JBOCD.Socket.createFile(ldid, dir, files[i].size, files[i].name, f);
+					}
+				};
+
+				JBOCD.Socket.init(function(e){
+					console.log("JBOCD connected!");
+					var loginOp = JBOCD.Socket.login(uid, CSRF, function(e){
+						console.log("JBOCD authenticated!");
+						JBOCD.Socket.getLogicalDrive(function(e){
+							for(var i = 0; i < e.response.ldList.length; i++){
+								console.log("CHK", e.response.ldList[i]);
+								if(e.response.ldList[i].ldID == ldid){
+									drives = e.response.ldList[i].cdList;
+									numOfDrive = e.response.ldList[i].cdList.length;
+									break;
+								}
+							}
+							JBOCD.Socket.list(ldid, 0, refreshFilelist);
+							$('#fileControl').show();
+						});
+					});
+				});
 
 			</script>
 			

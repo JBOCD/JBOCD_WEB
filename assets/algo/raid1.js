@@ -5,8 +5,9 @@ var Coding = function (property) {
 };
 
 Coding.prototype.encode = function(file, fileId){
-	console.log("Encoding in RAID-1, blockSize:", this.blockSize, ", FileSize:", file.size, ",noOfDrive:", this.noOfDrive);
 	console.log("File:", file);
+	console.log("Encoding in RAID-1, blockSize:", this.blockSize, ", FileSize:", file.size, ",noOfDrive:", this.noOfDrive);
+	
 	var slideSize = this.blockSize * this.noOfDrive;
 	var blocks = Math.ceil(file.size / this.blockSize);
 	for(var i = 0; i < blocks; i++){
@@ -14,7 +15,7 @@ Coding.prototype.encode = function(file, fileId){
 		//console.log(slice);
 		for(var j = 0; j < this.noOfDrive; j++){
 			// [Chunk, file id, chunk id, drive sequence, slice size]
-			postMessage([slice, fileId, i, j, slice.size]);
+			postMessage([slice, fileId, (i*this.noOfDrive)+j, j, slice.size]);
 		}
 	}
 };

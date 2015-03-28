@@ -14,6 +14,8 @@ class Filemanager extends CI_Controller {
 	}
 
 	public function index($ldid){
-		$this->view_model->generateView($this->load->view('filemanager', array('CSRF'=>$this->login_model->getCSRF(), 'ldid'=>$ldid, 'uid'=>$this->session->userdata('login_data')['id']), true));
+		$this->load->model('algorithm_model');
+		$driveAlgo = $this->algorithm_model->getDriveAlgorithmById($ldid);
+		$this->view_model->generateView($this->load->view('filemanager', array('CSRF'=>$this->login_model->getCSRF(), 'algo'=>$driveAlgo[0]->jsScript, 'ldid'=>$ldid, 'uid'=>$this->session->userdata('login_data')['id']), true));
 	}
 }
