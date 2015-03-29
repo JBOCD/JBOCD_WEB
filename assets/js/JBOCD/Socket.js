@@ -247,6 +247,27 @@ window.JBOCD.Socket = (function (){
 		]), 0);
 		return 255;
 	}
+	Socket.prototype.delFileChunk = function(logicalDriveID, fileID, callback){
+		var opID = operation.findIndex(isNull);
+		if(opID >= 0){
+			operation[opID] = {
+				request : {
+					command: 0x22,
+					opID: opID,
+					cb: callback,
+					ldID: logicalDriveID,
+					fID: fileID
+				}
+			}
+			send(new Blob([
+				JBOCD.Network.byteToBytes(0x29),
+				JBOCD.Network.byteToBytes(opID),
+				JBOCD.Network.intToBytes(logicalDriveID),
+				JBOCD.Network.longToBytes(fileID)
+			]), 0);
+		}
+		return opID;
+	}
 	var isNull = function(e){return !e;};
 	var interpreter = function(){
 		var command = JBOCD.Network.toByte(this.result, 0);
@@ -261,16 +282,11 @@ window.JBOCD.Socket = (function (){
 		}
 		switch(command){
 			case 0x00:
-				// close socket; or resent?; or reload page?
-				console.log("WebSocket: JBOCD: login fail.");
-				!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
-				delete operation[opID];
-				break;
 			case 0x01:
-				console.log("WebSocket: JBOCD: login successful.");
+				command === 0x00 ? console.log("WebSocket: JBOCD: login fail.") : console.log("WebSocket: JBOCD: login successful.");
+			case 0x29:
 				!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
 				delete operation[opID];
-				// get cloud drive; get logical drive;
 				break;
 			case 0x02:
 				fileReader(processCloudDrive, this.blob);
@@ -291,7 +307,7 @@ window.JBOCD.Socket = (function (){
 				fileReader(processGetChunkInfo, this.blob);
 				break;
 			case 0x23:
-				fileReader(processGetChunk, this.blob);
+				fileReader(processGetChunk, this.blob, 14);
 				break;
 			case 0x28:
 				fileReader(processDelFile, this.blob);
