@@ -25,28 +25,32 @@
 				fd.jQuery();
 				var zone;
 				var workers = [];
+				var dt;
 
 				$(document).ready(function() {
 					var data = [];
 
-				    $('#fileTable').dataTable( {
+				    dt = $('#fileTable').dataTable( {
 				        "data": data,
 				        "oLanguage": {
 							"sEmptyTable": "No file"
 						},
 				        "columns": [
-				            { "title": "Filename" },
-				            { "title": "Size" },
-				            {
+				        	{
 				                "className":      'details-control',
 				                "orderable":      false,
 				                "data":           null,
-				                "defaultContent": ''
-				            }
-				        ]
+				                "defaultContent": '<i class="fa fa-bars"></i>',
+				                "title":		  "action"
+				            },
+				            { "title": "Filename" },
+				            { "title": "Size" }
+				        ],
+        				"order": [[1, 'asc']]
 				    } );
-				    $('#fileTable tbody').on('click', 'td.details-control', function () {
 
+				    $('#fileTable tbody').on('click', 'td.details-control', function () {
+				    	$(this)
 				    });
 				});
 
@@ -77,14 +81,39 @@
 				var ldid = <?php echo $ldid; ?>;
 				var CSRF = '<?php echo $CSRF; ?>';
 				var script = '<?php echo $algo; ?>';
+				var files = [];
 				var dir = 0;
 				var drives;
 				var numOfDrive;
 
+				var format = function( d ) {
+				    // `d` is the original data object for the row
+				    console.log(d);
+				}
+
 				//File array = [name, size]
 				var refreshFilelist = function(e){
+					files = [];
 					var fileList = e.response.fileList;
 					console.log(fileList);
+					for(var i = 0; i < fileList.length; i++){
+						var size = fileList[i].size;
+						var unit;
+						if(fileList[i].size < 1024) unit = " bytes";
+						else if(fileList[i].size < 1048576) unit = " KB";
+						else if(fileList[i].size < 1073741824) unit = " GB";
+						else if(fileList[i].size < 1099511627776) unit = " TB";
+						while(size > 1024){
+							size /= 1024;
+						}
+						files[i] = [
+							null,
+							fileList[i].name,
+							parseFloat(Math.round(size * 100) / 100).toFixed(2) + unit
+						];
+					}
+					dt.fnClearTable();
+					dt.fnAddData( files );
 				}
 
 				var readfiles = function(files) {
