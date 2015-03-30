@@ -101,8 +101,8 @@
 						var unit;
 						if(fileList[i].size < 1024) unit = " bytes";
 						else if(fileList[i].size < 1048576) unit = " KB";
-						else if(fileList[i].size < 1073741824) unit = " GB";
-						else if(fileList[i].size < 1099511627776) unit = " TB";
+						else if(fileList[i].size < 1073741824) unit = " MB";
+						else if(fileList[i].size < 1099511627776) unit = " GB";
 						while(size > 1024){
 							size /= 1024;
 						}

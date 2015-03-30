@@ -38,7 +38,7 @@ class Volume_model extends CI_Model {
 			'uid'=>$uid,
 			'algoid'=>$algo,
 			'name'=>$name,
-			'size'=>$size
+			'size'=>$size * 1024 * 1024 * 1024
 		);
 		$this->db->insert('logicaldriveinfo', $data);
 		$id = $this->db->insert_id();
@@ -48,8 +48,8 @@ class Volume_model extends CI_Model {
 				'ldid'=>$id,
 				'cdid'=>$key,
 				'cddir'=>"/JBOCD/$id/",
-				'size'=>$size * 1024 * 1024,
-				'alloc_size'=>$container * 1024 * 1024
+				'size'=>$size * 1024 * 1024 * 1024,
+				'alloc_size'=>$container * 1024 * 1024 * 1024
 			);
 			$this->db->insert('logicaldrivecontainer', $con);
 		}
