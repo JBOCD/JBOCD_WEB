@@ -53,7 +53,7 @@ window.JBOCD.Network = (function (){
 		return new Uint8Array([val >>> 24, val >>> 16, val >>> 8, val]);
 	}
 	Network.prototype.longToBytes = function(val){
-		var val1 = Math.floor(val1 / 4294967296);
+		var val1 = Math.floor(val / 4294967296);
 		return new Uint8Array([val1 >>> 24, val1 >>> 16, val1 >>> 8, val1, val >>> 24, val >>> 16, val >>> 8, val]);
 	}
 	Network.prototype.charsToBytes = function(str){
