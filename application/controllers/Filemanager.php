@@ -19,3 +19,6 @@ class Filemanager extends CI_Controller {
 		$this->view_model->generateView($this->load->view('filemanager', array('CSRF'=>$this->login_model->getCSRF(), 'algo'=>$driveAlgo[0]->jsScript, 'ldid'=>$ldid, 'uid'=>$this->session->userdata('login_data')['id']), true));
 	}
 }
+
+
+?>
