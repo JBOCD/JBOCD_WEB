@@ -449,7 +449,7 @@ window.JBOCD.Socket = (function (){
 				blobList: [
 					{
 						start: 0,
-						status: JBOCD.Network.toByte(this.result, 6)
+						status: JBOCD.Network.toByte(this.result, 6),
 						length: thisSize,
 						blob: this.blob.slice(15)
 					}
