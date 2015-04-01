@@ -406,7 +406,6 @@ window.JBOCD.Socket = (function (){
 		res.seqNum = JBOCD.Network.toInt(this.result, 2);
 		res.status = JBOCD.Network.toByte(this.result, 6);
 		res.size = JBOCD.Network.toInt(this.result, 7);
-		res.seqNum = JBOCD.Network.toInt(this.result, 8);
 		!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
 		delete operation[opID];
 	}
