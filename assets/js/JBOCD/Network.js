@@ -23,7 +23,7 @@ window.JBOCD.Network = (function (){
 		start = !start? 0 : start;
 		if(arrayBuffer.byteLength >= start+4){
 			var val = new Uint8Array(arrayBuffer.slice(start,start+4));
-			return val[0] * 16777216 + val[1] << 16 | val[2] << 8 | val[3];
+			return (val[0] * 16777216) + (val[1] << 16 | val[2] << 8 | val[3]);
 		}
 		return 0;
 	}
@@ -31,7 +31,7 @@ window.JBOCD.Network = (function (){
 		start = !start? 0 : start;
 		if(arrayBuffer.byteLength >= start+8){
 			var val = new Uint8Array(arrayBuffer.slice(start+0,start+8));
-			return (val[0] * 16777216 + val[1] << 16 | val[2] << 8 | val[3] ) * 4294967296 + val[4] * 16777216 + val[5] << 16 | val[6] << 8 | val[7];
+			return ((val[0] * 16777216) + (val[1] << 16 | val[2] << 8 | val[3]) ) * 4294967296 + (val[4] * 16777216) + (val[5] << 16 | val[6] << 8 | val[7]);
 		}
 		return 0;
 	}
