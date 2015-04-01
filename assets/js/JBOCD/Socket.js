@@ -198,6 +198,7 @@ window.JBOCD.Socket = (function (){
 					ldID: logicalDriveID,
 					cdID: cloudDriveID,
 					fID: fileID,
+					seqNum: seqNum,
 					size: blob.size,
 					name: name,
 					blob: blob
@@ -307,7 +308,7 @@ window.JBOCD.Socket = (function (){
 				fileReader(processGetChunkInfo, this.blob);
 				break;
 			case 0x23:
-				fileReader(processGetChunk, this.blob, 14);
+				fileReader(processGetChunk, this.blob, 15);
 				break;
 			case 0x28:
 				fileReader(processDelFile, this.blob);
@@ -427,35 +428,36 @@ window.JBOCD.Socket = (function (){
 		var res = operation[opID].response;
 		var seqNum = JBOCD.Network.toInt(this.result, 2);
 		if(!!res.chunkList[seqNum]){
-			var thisSize = JBOCD.Network.toInt(this.result, 10);
+			var thisSize = JBOCD.Network.toInt(this.result, 11);
 			var seqInfo = res.chunkList[seqNum];
 			var blobInfo = {
-				start: JBOCD.Network.toInt(this.result, 6),
+				start: JBOCD.Network.toInt(this.result, 7),
 				length: thisSize,
-				blob: this.blob.slice(14)
+				blob: this.blob.slice(15)
 			};
 			var i;
 			seqInfo.getSize += thisSize;
-			seqInfo.isEnd = seqInfo.isEnd || (this.blob.size == 14) || (seqInfo.getSize == seqInfo.size);
+			seqInfo.isEnd = seqInfo.isEnd || (this.blob.size == 15) || (seqInfo.getSize == seqInfo.size);
 			seqInfo.isError = seqInfo.isError || ( seqInfo.isEnd && (seqInfo.getSize != seqInfo.size) );
 			for(i=0; blobInfo.start < seqInfo.blobList[i].start || i < seqInfo.blobList.length; i++);
 			seqInfo.blobList.splice(i,0,blobInfo);
 		}else{
-			var thisSize = JBOCD.Network.toInt(this.result, 10);
+			var thisSize = JBOCD.Network.toInt(this.result, 11);
 			res.chunkList[seqNum] = {
 				seqNum: seqNum,
-				size: JBOCD.Network.toInt(this.result, 6),
+				size: JBOCD.Network.toInt(this.result, 7),
 				blobList: [
 					{
 						start: 0,
+						status: JBOCD.Network.toByte(this.result, 6)
 						length: thisSize,
-						blob: this.blob.slice(14)
+						blob: this.blob.slice(15)
 					}
 				],
 				getSize: thisSize,
-				isEnd: (this.blob.size - 14 == thisSize) || (this.blob.size == 14)
+				isEnd: (this.blob.size - 15 == thisSize) || (this.blob.size == 15)
 			}
-			res.chunkList[seqNum].isError = this.blob.size == 14;
+			res.chunkList[seqNum].isError = this.blob.size == 15;
 
 		}
 		if(res.chunkList[seqNum].isEnd){
