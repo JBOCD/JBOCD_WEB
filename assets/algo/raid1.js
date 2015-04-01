@@ -14,13 +14,13 @@ Coding.prototype.encode = function(file, fileId){
 		var slice = file.slice(i * this.blockSize, (i+1) * this.blockSize, file.type);
 		//console.log(slice);
 		for(var j = 0; j < this.noOfDrive; j++){
-			// [Chunk, file id, chunk id, drive sequence, slice size]
-			postMessage([slice, fileId, (i*this.noOfDrive)+j, j, slice.size]);
+			// [Chunk, file id, chunk id, drive sequence, slice size, totalNumOfChunks]
+			postMessage([slice, fileId, (i*this.noOfDrive)+j, j, slice.size, blocks * this.noOfDrive]);
 		}
 	}
 };
 
 Coding.prototype.decode = function(listOfChunks){
 	console.log("Decoding in RAID-1, blockSize:", this.blockSize, ",noOfDrive:", this.noOfDrive);
-	console.log("File:", file);
+	console.log("Input:", listOfChunks);
 };
