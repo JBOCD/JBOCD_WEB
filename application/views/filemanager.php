@@ -153,7 +153,7 @@
 					for (var i = 0; i < files.length; i++) {
 						var file = files[i];
 						var fileSize = files[i].size;
-						JBOCD.Socket.createFile(ldid, dir, files[i].size, encodeURIComponent(files[i].name), (
+						JBOCD.Socket.createFile(ldid, dir, files[i].size, encodeURIComponent(files[i].name), (function(){
 							var chunkList = [];
 							var totalNumOfChunk = 0;
 							var numOfChunkDone = 0;
@@ -236,7 +236,7 @@
 								});
 								*/
 							}
-						}());
+						})());
 					}
 				};
 
