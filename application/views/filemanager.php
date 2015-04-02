@@ -206,7 +206,7 @@
 							return function(e){
 								var opID = 0;
 								fID = e.response.fID;
-								fileTemp[fid] = { totalNumOfChunks: totalNumOfChunk, completedChunks:0 };
+								fileTemp[fID] = { totalNumOfChunks: totalNumOfChunk, completedChunks:0 };
 								console.log("res",e);
 
 								while(opID >= 0 && chunkList.length > 0){
