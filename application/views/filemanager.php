@@ -153,7 +153,9 @@
 					for (var i = 0; i < files.length; i++) {
 						var file = files[i];
 						var fileSize = files[i].size;
-						JBOCD.Socket.createFile(ldid, dir, files[i].size, encodeURIComponent(files[i].name), function(e){
+						JBOCD.Socket.createFile(ldid, dir, files[i].size, encodeURIComponent(files[i].name), (
+							var chunkList = [];
+							return function(e){
 							var fid = e.response.fID;
 							console.log("res",e);
 							if(workers[fid] == undefined){
@@ -186,7 +188,7 @@
 									}
 								});
 							}
-						});
+						}());
 					}
 				};
 
