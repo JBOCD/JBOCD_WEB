@@ -147,11 +147,14 @@ class Main extends CI_Controller {
 	}
 	
 	public function distroy($dir = null){
-		include($this->php_module_path.$dir.'/'.$dir.'.php');
-		$module = new $dir($this->db);
-		$module->distroy();
-		system('rm -R '.$this->php_module_path.$dir);
-		redirect('main/module', 'refresh');
+		$this->load->model('module_model');
+		if($this->module_model->checkModule($dir) <= 0){
+			include($this->php_module_path.$dir.'/'.$dir.'.php');
+			$module = new $dir($this->db);
+			$module->distroy();
+			system('rm -R '.$this->php_module_path.$dir);
+			redirect('main/module', 'refresh');
+		}
 	}
 	
 	public function logout(){
