@@ -227,7 +227,7 @@
 									totalChunks+=e.data[5];
 								}
 								chunkList.push({
-									cdid: drives[e.data[3]].cdID,
+									cdID: drives[e.data[3]].cdID,
 									seqNum: e.data[2],
 									blob: e.data[0]
 								});
