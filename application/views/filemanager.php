@@ -162,28 +162,6 @@
 							var worker = null;
 							// var ldID = ldid; // ldid is global variable
 
-							// load chunk
-							worker = new Worker('<?php echo asset_url(); ?>algo/worker.js');
-
-							//console.log("POST:", [script, [numOfDrive, 1024*1024], file.nativeFile, ['encode', e.response.fID]]);
-							worker.onmessage = function(e){
-								//console.log("PutChunk:", [ldid, drives[e.data[3]].cdID, e.data[1], e.data[2], '', e.data[0]]);
-								if(numOfChunkDone == 0){
-									totalNumOfChunk = e.data[5];
-									totalChunks+=e.data[5];
-								}
-								chunkList.push({
-									cdid: drives[e.data[3]].cdID,
-									seqNum: e.data[2],
-									blob: e.data[0]
-								});
-								numOfChunkDone++;
-								if(numOfChunkDone == totalNumOfChunk){
-									worker.postMessage("close");
-									delete worker;
-								}
-							}
-							worker.postMessage([script, [numOfDrive, 1024*1024], file.nativeFile, ['encode', 0]]);
 
 							var putChunkCB = function(e){
 									console.log("Fin Put chunk:", e);
@@ -203,11 +181,9 @@
 										}
 									}
 							};
-							return function(e){
+
+							var putChunk = function(){
 								var opID = 0;
-								fID = e.response.fID;
-								fileTemp[fID] = { totalNumOfChunks: totalNumOfChunk, completedChunks:0 };
-								console.log("res",e);
 
 								while(opID >= 0 && chunkList.length > 0){
 									var chunk = chunkList.shift();
@@ -235,7 +211,42 @@
 									}
 								});
 								*/
+							};
+
+							// load chunk
+							worker = new Worker('<?php echo asset_url(); ?>algo/worker.js');
+
+							//console.log("POST:", [script, [numOfDrive, 1024*1024], file.nativeFile, ['encode', e.response.fID]]);
+							worker.onmessage = function(e){
+								//console.log("PutChunk:", [ldid, drives[e.data[3]].cdID, e.data[1], e.data[2], '', e.data[0]]);
+								if(numOfChunkDone == 0){
+									totalNumOfChunk = e.data[5];
+									totalChunks+=e.data[5];
+								}
+								chunkList.push({
+									cdid: drives[e.data[3]].cdID,
+									seqNum: e.data[2],
+									blob: e.data[0]
+								});
+								numOfChunkDone++;
+								if(numOfChunkDone == totalNumOfChunk){
+									worker.postMessage("close");
+									delete worker;
+								}
+								if(fID > 0){
+									putChunk();
+								}
 							}
+							worker.postMessage([script, [numOfDrive, 1024*1024], file.nativeFile, ['encode', 0]]);
+
+							return function(e){
+								fID = e.response.fID;
+								fileTemp[fID] = { totalNumOfChunks: totalNumOfChunk, completedChunks:0 };
+								console.log("res",e);
+								if(chunkList.length > 0){
+									putChunk();
+								}
+							};
 						})());
 					}
 				};
