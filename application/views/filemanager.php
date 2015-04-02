@@ -41,7 +41,7 @@
 				$('#fileControl').hide();
 				fd.jQuery();
 				var zone;
-				var workers = [];
+//				var workers = [];
 				var dt;
 
 				$(document).ready(function() {
@@ -106,7 +106,7 @@
 				var drives;
 				var numOfDrive;
 				var workerTemp = {};
-				var fileTemp = {};
+//				var fileTemp = {};
 				var allChunks = 0, totalChunks = 0;
 
 				//File array = [name, size]
@@ -157,6 +157,7 @@
 							var chunkList = [];
 							var totalNumOfChunk = 0;
 							var numOfChunkDone = 0;
+							var numOfChunkUploaded = 0;
 
 							var fID = 0;
 							var worker = null;
@@ -165,17 +166,16 @@
 
 							var putChunkCB = function(e){
 								console.log("Fin Put chunk:", e);
-								fileTemp[fID].completedChunks += 1;
+								numOfChunkUploaded += 1;
 								allChunks++;
 								$("#percent").html((allChunks/totalChunks*100) + "%");
 
 								if(chunkList.length > 0){
 									putChunk();
 								}
-								if(fileTemp[fID].completedChunks == fileTemp[fID].totalNumOfChunks){
+								if(numOfChunkUploaded == totalNumOfChunk){
 //										allChunks+= fileTemp[fID].totalNumOfChunks;
 //										$("#percent").html((allChunks/totalChunks*100) + "%");
-									delete fileTemp[fID];
 									if(allChunks == totalChunks){
 										JBOCD.Socket.list(ldid, dir, refreshFilelist);
 										$(".btn-close").click();
@@ -244,7 +244,6 @@
 
 							return function(e){
 								fID = e.response.fID;
-								fileTemp[fID] = { totalNumOfChunks: totalNumOfChunk, completedChunks:0 };
 								console.log("res",e);
 								if(chunkList.length > 0){
 									putChunk();
