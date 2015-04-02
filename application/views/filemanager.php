@@ -117,12 +117,16 @@
 					for(var i = 0; i < fileList.length; i++){
 						var size = fileList[i].size;
 						var unit;
-						if(fileList[i].size < 1024) unit = " bytes";
-						else if(fileList[i].size < 1048576) unit = " KB";
-						else if(fileList[i].size < 1073741824) unit = " MB";
-						else if(fileList[i].size < 1099511627776) unit = " GB";
-						while(size > 1024){
+						if(fileList[i].size < 1024){ unit = " bytes"; }
+						else if(fileList[i].size < 1048576){ 
+							unit = " KB";
 							size /= 1024;
+						}else if(fileList[i].size < 1073741824){ 
+							unit = " MB";
+							size /= 1048576;
+						}else if(fileList[i].size < 1099511627776){ 
+							unit = " GB";
+							size /= 1073741824;
 						}
 						files[i] = [
 							null,
@@ -214,7 +218,8 @@
 									var delFileList = $(".DTTT_selected");
 									totalChunks = delFileList.length;
 									for(var i = 0; i < delFileList.length;i++){
-										JBOCD.Socket.delFile(ldid, parseInt(delFileList.value));
+										JBOCD.Socket.delFile(ldid, parseInt(delFileList[i].value));
+										//console.log("Del:FID=", parseInt(delFileList[i].value));
 									}
 									$("#delBox").html('<h1 class="text-center"><i class="fa fa-warning faa-flash animated"></i> '+(allChunks/totalChunks*100) + "%"+'</h1>');
 									$("#deleteConfirm").off();
