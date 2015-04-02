@@ -164,22 +164,25 @@
 
 
 							var putChunkCB = function(e){
-									console.log("Fin Put chunk:", e);
-									fileTemp[fID].completedChunks += 1;
-									allChunks++;
-									$("#percent").html((allChunks/totalChunks*100) + "%");
+								console.log("Fin Put chunk:", e);
+								fileTemp[fID].completedChunks += 1;
+								allChunks++;
+								$("#percent").html((allChunks/totalChunks*100) + "%");
 
-									if(fileTemp[fID].completedChunks == fileTemp[fID].totalNumOfChunks){
+								if(chunkList.length > 0){
+									putChunk();
+								}
+								if(fileTemp[fID].completedChunks == fileTemp[fID].totalNumOfChunks){
 //										allChunks+= fileTemp[fID].totalNumOfChunks;
 //										$("#percent").html((allChunks/totalChunks*100) + "%");
-										delete fileTemp[fID];
-										if(allChunks == totalChunks){
-											JBOCD.Socket.list(ldid, dir, refreshFilelist);
-											$(".btn-close").click();
-											allChunks=0;
-											totalChunks=0;
-										}
+									delete fileTemp[fID];
+									if(allChunks == totalChunks){
+										JBOCD.Socket.list(ldid, dir, refreshFilelist);
+										$(".btn-close").click();
+										allChunks=0;
+										totalChunks=0;
 									}
+								}
 							};
 
 							var putChunk = function(){
