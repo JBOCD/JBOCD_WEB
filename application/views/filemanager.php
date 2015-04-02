@@ -107,7 +107,7 @@
 						];
 					}
 					dt.fnClearTable();
-					dt.fnAddData( files );
+					if(files.length > 0) dt.fnAddData( files );
 				}
 
 				var workerCollection = function(id){
@@ -136,12 +136,10 @@
 								if(testfile[e.data[1]] == undefined) testfile[e.data[1]] = { chunkList:{} };
 								testfile[e.data[1]].chunkList[e.data[2]] = e.data[0];
 								if(fileTemp[e.data[1]].completedChunks == fileTemp[e.data[1]].totalNumOfChunks){
-									console.log("End of chunk");
-									console.log(testfile);
-									console.log("Terminate",e.data[1], "in", workers );
 									workers[fid].postMessage("close");
 									delete workers[e.data[1]];
 									delete fileTemp[e.data[1]];
+									JBOCD.Socket.list(ldid, dir, refreshFilelist);
 								}
 								JBOCD.Socket.putChunk(ldid, drives[e.data[3]].cdID, e.data[1], e.data[2], '', e.data[0], function(e){
 									console.log("Fin Put chunk:", e);
@@ -168,7 +166,7 @@
 									break;
 								}
 							}
-							JBOCD.Socket.list(ldid, 0, refreshFilelist);
+							JBOCD.Socket.list(ldid, dir, refreshFilelist);
 							$('#fileControl').show();
 						});
 					});
