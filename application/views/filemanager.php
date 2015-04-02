@@ -155,21 +155,68 @@
 						var fileSize = files[i].size;
 						JBOCD.Socket.createFile(ldid, dir, files[i].size, encodeURIComponent(files[i].name), (
 							var chunkList = [];
-							return function(e){
-							var fid = e.response.fID;
-							console.log("res",e);
-							if(workers[fid] == undefined){
-								workers[fid] = new Worker('<?php echo asset_url(); ?>algo/worker.js');
-							}
+							var totalNumOfChunk = 0;
+							var numOfChunkDone = 0;
+
+							var fID = 0;
+							var worker = null;
+							// var ldID = ldid; // ldid is global variable
+
+							// load chunk
+							worker = new Worker('<?php echo asset_url(); ?>algo/worker.js');
+
 							//console.log("POST:", [script, [numOfDrive, 1024*1024], file.nativeFile, ['encode', e.response.fID]]);
-							workers[fid].postMessage([script, [numOfDrive, 1024*1024], file.nativeFile, ['encode', e.response.fID]]);
-							workers[fid].onmessage = function(e){
-								console.log("PutChunk:", [ldid, drives[e.data[3]].cdID, e.data[1], e.data[2], '', e.data[0]]);
-								if(fileTemp[e.data[1]] == undefined){
-									fileTemp[fid] = { totalNumOfChunks: e.data[5], completedChunks:0 };
+							worker.onmessage = function(e){
+								//console.log("PutChunk:", [ldid, drives[e.data[3]].cdID, e.data[1], e.data[2], '', e.data[0]]);
+								if(numOfChunkDone == 0){
+									totalNumOfChunk = e.data[5];
 									totalChunks+=e.data[5];
 								}
-								
+								chunkList.push({
+									cdid: drives[e.data[3]].cdID,
+									seqNum: e.data[2],
+									blob: e.data[0]
+								});
+								numOfChunkDone++;
+								if(numOfChunkDone == totalNumOfChunk){
+									worker.postMessage("close");
+									delete worker;
+								}
+							}
+							worker.postMessage([script, [numOfDrive, 1024*1024], file.nativeFile, ['encode', 0]]);
+
+							var putChunkCB = function(e){
+									console.log("Fin Put chunk:", e);
+									fileTemp[fID].completedChunks += 1;
+									allChunks++;
+									$("#percent").html((allChunks/totalChunks*100) + "%");
+
+									if(fileTemp[fID].completedChunks == fileTemp[fID].totalNumOfChunks){
+//										allChunks+= fileTemp[fID].totalNumOfChunks;
+//										$("#percent").html((allChunks/totalChunks*100) + "%");
+										delete fileTemp[fID];
+										if(allChunks == totalChunks){
+											JBOCD.Socket.list(ldid, dir, refreshFilelist);
+											$(".btn-close").click();
+											allChunks=0;
+											totalChunks=0;
+										}
+									}
+							};
+							return function(e){
+								var opID = 0;
+								fID = e.response.fID;
+								fileTemp[fid] = { totalNumOfChunks: totalNumOfChunk, completedChunks:0 };
+								console.log("res",e);
+
+								while(opID >= 0 && chunkList.length > 0){
+									var chunk = chunkList.shift();
+									opID = JBOCD.Socket.putChunk(ldid, chunk.cdID, fID, chunk.seqNum, '', chunk.blob, putChunkCB);
+									if(opID < 0){
+										chunkList.splice(0,0,chunk);
+									}
+								};
+								/*
 								JBOCD.Socket.putChunk(ldid, drives[e.data[3]].cdID, e.data[1], e.data[2], '', e.data[0], function(e){
 									console.log("Fin Put chunk:", e);
 									fileTemp[e.request.fID].completedChunks += 1;
@@ -187,6 +234,7 @@
 										}
 									}
 								});
+								*/
 							}
 						}());
 					}
