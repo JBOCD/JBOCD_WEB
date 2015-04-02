@@ -1,5 +1,21 @@
+			<link rel="stylesheet" href="<?php echo asset_url(); ?>css/font-awesome-animation.min.css">
 			<link href="<?php echo asset_url(); ?>css/filedrop.css" rel="stylesheet">
 			<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+			<style type="text/css">
+				tr td:first-child {
+			        text-align: center;
+			    }
+			 
+			    tr td:first-child:before {
+			        content: "\f096 "; /* fa-square-o */
+			        font-family: FontAwesome;
+			    }
+			 
+			    tr.selected td:first-child:before {
+			        content: "\f046 "; /* fa-check-square-o */
+			    }
+			</style>
+
 
 			<div class="row">
                 <div class="span12">
@@ -10,7 +26,7 @@
             <div class="row" id="fileControl">
             	<button class="primary" id="upload">Upload</button>
 	            <button class="primary">New folder</button>
-	            <button class="danger">Delete</button>
+	            <button class="danger" id="delete">Delete</button>
             </div>
 
             <div class="row">
@@ -18,6 +34,7 @@
             </div>
 
             <script src="<?php echo asset_url(); ?>js/jquery/jquery.dataTables.js"></script>
+            <script src="<?php echo asset_url(); ?>js/dataTables.tableTools.js"></script>
 			<script src="<?php echo asset_url(); ?>js/metro/metro-input-control.js"></script>
 			<script src="<?php echo asset_url(); ?>js/filedrop.js"></script>
 			<script type="text/javascript">
@@ -35,16 +52,26 @@
 				        "oLanguage": {
 							"sEmptyTable": "No file"
 						},
+						"columnDefs": [
+			            {
+			                "targets": [ 3 ],
+			                "visible": false,
+			                "searchable": false
+			            }],
 				        "columns": [
-				            { "title": "Filename" },
-				            { "title": "Size" }
+				        	{ data: null, defaultContent: '', orderable: false },
+				            { "title": "Filename", "className":"fn" },
+				            { "title": "Size" },
+				        	{ "title": "id" , "className":"fid"}
 				        ],
+				        dom: 'T<"clear">lfrtip',
+				        tableTools: {
+				            "sRowSelect": "os",
+				            sRowSelector: 'td:first-child',
+				            "aButtons": [{"sExtends": "csv","sButtonText": ""}]
+				        },
         				"order": [[1, 'asc']]
 				    } );
-
-				    $('#fileTable tbody').on('click', 'td.details-control', function () {
-				    	$(this)
-				    });
 				});
 
 				$("#upload").on('click', function(){
@@ -59,7 +86,7 @@
 				        content: '',
 				        onShow: function(_dialog){
 				        	var content = _dialog.children('.content');
-				        	content.html('<div class=" container" id="holder"><h1 class="text-center"><i class="fa fa-hand-o-up"></i><span> CLICK <small>or</small> DROP </span><i class="fa fa-upload"></i><h1></div>');
+				        	content.html('<div class="container" id="holder"><h1 class="text-center" id="uploadbox"><i class="fa fa-hand-o-up"></i><span> CLICK <small>or</small> DROP </span><i class="fa fa-upload"></i></h1></div>');
 				        	$('#holder')
 				        		.filedrop({multiple: true})
 				        		.on('fdsend', function(e, files){
@@ -80,17 +107,13 @@
 				var numOfDrive;
 				var workerTemp = {};
 				var fileTemp = {};
-
-				var format = function( d ) {
-				    // `d` is the original data object for the row
-				    console.log(d);
-				}
+				var allChunks = 0, totalChunks = 0;
 
 				//File array = [name, size]
 				var refreshFilelist = function(e){
 					files = [];
 					var fileList = e.response.fileList;
-					console.log(fileList);
+					//console.log(fileList);
 					for(var i = 0; i < fileList.length; i++){
 						var size = fileList[i].size;
 						var unit;
@@ -102,26 +125,31 @@
 							size /= 1024;
 						}
 						files[i] = [
-							fileList[i].name,
-							parseFloat(Math.round(size * 100) / 100).toFixed(2) + unit
+							null,
+							decodeURIComponent(fileList[i].name),
+							parseFloat(Math.round(size * 100) / 100).toFixed(2) + unit,
+							fileList[i].fID
 						];
 					}
 					dt.fnClearTable();
-					if(files.length > 0) dt.fnAddData( files );
+					if(files.length > 0){ 
+						dt.fnAddData( files );
+						for(var i = 0; i < files.length; i++){
+							dt.fnSettings().aoData[i].nTr.value = files[i][3];
+						}
+					}
 				}
 
 				var workerCollection = function(id){
 					//if(fileTemp[id])
 				}
 
-				var unwork = {};
-				var testfile = {};
-
 				var readfiles = function(files) {
+					$("#uploadbox").html('<i class="fa fa-circle-o-notch fa-spin"></i> Uploading ... <span id="percent">0%</span>');
 					for (var i = 0; i < files.length; i++) {
 						var file = files[i];
 						var fileSize = files[i].size;
-						JBOCD.Socket.createFile(ldid, dir, files[i].size, files[i].name, function(e){
+						JBOCD.Socket.createFile(ldid, dir, files[i].size, encodeURIComponent(files[i].name), function(e){
 							var fid = e.response.fID;
 							console.log("res",e);
 							if(workers[fid] == undefined){
@@ -131,18 +159,27 @@
 							workers[fid].postMessage([script, [numOfDrive, 1024*1024], file.nativeFile, ['encode', e.response.fID]]);
 							workers[fid].onmessage = function(e){
 								console.log("PutChunk:", [ldid, drives[e.data[3]].cdID, e.data[1], e.data[2], '', e.data[0]]);
-								if(fileTemp[e.data[1]] == undefined) fileTemp[fid] = { totalNumOfChunks: e.data[5], completedChunks:0 };
-								fileTemp[e.data[1]].completedChunks += 1;
-								if(testfile[e.data[1]] == undefined) testfile[e.data[1]] = { chunkList:{} };
-								testfile[e.data[1]].chunkList[e.data[2]] = e.data[0];
-								if(fileTemp[e.data[1]].completedChunks == fileTemp[e.data[1]].totalNumOfChunks){
-									workers[fid].postMessage("close");
-									delete workers[e.data[1]];
-									delete fileTemp[e.data[1]];
-									JBOCD.Socket.list(ldid, dir, refreshFilelist);
+								if(fileTemp[e.data[1]] == undefined){
+									fileTemp[fid] = { totalNumOfChunks: e.data[5], completedChunks:0 };
+									totalChunks+=e.data[5];
 								}
+								
 								JBOCD.Socket.putChunk(ldid, drives[e.data[3]].cdID, e.data[1], e.data[2], '', e.data[0], function(e){
 									console.log("Fin Put chunk:", e);
+									fileTemp[e.request.fID].completedChunks += 1;
+									if(fileTemp[e.request.fID].completedChunks == fileTemp[e.request.fID].totalNumOfChunks){
+										workers[e.request.fID].postMessage("close");
+										allChunks+= fileTemp[e.request.fID].totalNumOfChunks;
+										$("#percent").html((allChunks/totalChunks*100) + "%");
+										delete workers[e.request.fID];
+										delete fileTemp[e.request.fID];
+										if(allChunks == totalChunks){
+											JBOCD.Socket.list(ldid, dir, refreshFilelist);
+											$(".btn-close").click();
+											allChunks=0;
+											totalChunks=0;
+										}
+									}
 								});
 							}
 						});
@@ -152,6 +189,61 @@
 				var getFileCallback = function(e){
 					//var data = 
 				}
+
+				$("#delete").on('click', function(){
+					var delFileList = $(".DTTT_selected");
+					var delFileNameList = $(".DTTT_selected .fn");
+					if(delFileList.length > 0){
+						var str = '';
+						for(var i = 0; i < delFileNameList.length;i++){
+							str += '<li>'+delFileNameList[i].innerHTML+'</li>';
+						}
+					    $.Dialog({
+					    	padding: 20,
+					    	width: "30%",
+					    	height: "40%",
+					        overlay: true,
+					        shadow: true,
+					        flat: true,
+					        title: 'Delete',
+					        content: '',
+					        onShow: function(_dialog){
+					        	var content = _dialog.children('.content');
+					        	content.html('<div class="container" id="delBox"><h3>Are you sure to delete following files?</h3><ul>'+str+'</ul><button class="danger large" id="deleteConfirm">Delete</button><button class="large" id="deleteCancel">Cancel</button></div>');
+					        	$("#deleteConfirm").on('click', function(){
+									var delFileList = $(".DTTT_selected");
+									totalChunks = delFileList.length;
+									for(var i = 0; i < delFileList.length;i++){
+										JBOCD.Socket.delFile(ldid, parseInt(delFileList.value));
+									}
+									$("#delBox").html('<h1 class="text-center"><i class="fa fa-warning faa-flash animated"></i> '+(allChunks/totalChunks*100) + "%"+'</h1>');
+									$("#deleteConfirm").off();
+									$("#deleteCancel").off();
+								});
+
+								$("#deleteCancel").on('click', function(){
+									$('.btn-close').click();
+									$("#deleteConfirm").off();
+									$("#deleteCancel").off();
+								});
+					        }
+					    });
+					}
+				});
+
+				
+
+
+				var delFileCallback = function(e){
+					allChunks++;
+					$("#delBox").html('<h1 class="text-center"><i class="fa fa-warning faa-flash animated"></i> '+(allChunks/totalChunks*100) + "%"+'</h1>');
+					if(allChunks==totalChunks){
+						JBOCD.Socket.list(ldid, dir, refreshFilelist);
+						$('.btn-close').click();
+						allChunks=0;
+						totalChunks=0;
+					}
+				};
 
 				JBOCD.Socket.init(function(e){
 					console.log("JBOCD connected!");
@@ -167,6 +259,7 @@
 								}
 							}
 							JBOCD.Socket.list(ldid, dir, refreshFilelist);
+							JBOCD.Socket.setDelFileCallback(delFileCallback);
 							$('#fileControl').show();
 						});
 					});
