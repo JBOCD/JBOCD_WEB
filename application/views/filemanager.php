@@ -194,7 +194,7 @@
 								}
 							}
 							worker.postMessage([script, [numOfDrive, 1024*1024], null, ["getMinAcceptChunk"]]);
-							JBOCD.Socket.getFile(ldid, this.dataset.value, getFileHandler);
+							JBOCD.Socket.getFile(ldid, Number(this.dataset.value), getFileHandler);
 						}
 					};
 				})();
