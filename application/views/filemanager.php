@@ -165,6 +165,13 @@
 
 
 							var putChunkCB = function(e){
+								if(e.response.status == 251){ // retry limit exceed, resent package
+									chunkList.push({
+										cdID: e.request.cdID,
+										seqNum: e.request.seqNum,
+										blob: e.request.blob
+									});
+								}
 								console.log("Fin Put chunk:", e);
 								numOfChunkUploaded += 1;
 								allChunks++;
