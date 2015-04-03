@@ -20,7 +20,16 @@ Coding.prototype.encode = function(file, fileId){
 	}
 };
 
-Coding.prototype.decode = function(listOfChunks){
-	console.log("Decoding in RAID-1, blockSize:", this.blockSize, ",noOfDrive:", this.noOfDrive);
-	console.log("Input:", listOfChunks);
+Coding.prototype.decode = function(listOfChunks, row, size){
+	var blob = null;
+	for(var i=0; i<listOfChunks.length; i++){
+		if(!!listOfChunks[i] && listOfChunks[i].size == size){
+			blob = listOfChunks[i];
+			break;
+		}
+	}
+	postMessage("decode", row, blob);
+};
+Coding.prototype.getMinAcceptChunk = function(){
+	postMessage(["getMinAcceptChunk", 1);
 };
