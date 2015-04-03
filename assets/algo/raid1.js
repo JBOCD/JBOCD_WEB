@@ -31,5 +31,5 @@ Coding.prototype.decode = function(listOfChunks, row, size){
 	postMessage("decode", row, blob);
 };
 Coding.prototype.getMinAcceptChunk = function(){
-	postMessage(["getMinAcceptChunk", 1);
+	postMessage(["getMinAcceptChunk", 1]);
 };
