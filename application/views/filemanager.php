@@ -57,6 +57,11 @@
 			                "targets": [ 3 ],
 			                "visible": false,
 			                "searchable": false
+			            },{
+			            	"render": function(data,type,row){
+			            		return '<a href="#" class="downloadBtn" data-value="' + row[3] + '">' + data + '</a>';
+			            	},
+			            	"targets": 1
 			            }],
 				        "columns": [
 				        	{ data: null, defaultContent: '', orderable: false },
@@ -109,6 +114,10 @@
 //				var fileTemp = {};
 				var allChunks = 0, totalChunks = 0;
 
+				var fileDownload = function(e){
+					console.log("Download file: ", this.innerHTML," id=", this.getAttribute("data-value"));
+				};
+
 				//File array = [name, size]
 				var refreshFilelist = function(e){
 					files = [];
@@ -135,13 +144,16 @@
 							fileList[i].fID
 						];
 					}
+					$('.downloadBtn').off('click', fileDownload);
 					dt.fnClearTable();
 					if(files.length > 0){ 
 						dt.fnAddData( files );
 						for(var i = 0; i < files.length; i++){
 							dt.fnSettings().aoData[i].nTr.value = files[i][3];
 						}
+						$('.downloadBtn').on('click', fileDownload);
 					}
+
 				}
 
 				var workerCollection = function(id){
