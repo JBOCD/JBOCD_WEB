@@ -13,6 +13,12 @@ class Module_model extends CI_Model {
 	public function getModuleList(){
 		return $this->db->query('SELECT * FROM `libraries`')->result_array();
 	}
+
+	public function checkModule($dir){
+		$query = $this->db->query("SELECT count(*) as c FROM logicaldrivecontainer ld, clouddrive c, libraries l WHERE c.lid = l.id and ld.cdid = c.cdid and l.dir = ?", array($config->dir));
+		$r = $query->row();
+		return $r->c;
+	}
 	
 	public function newModule($config){
 		$query = $this->db->query('SELECT * FROM `libraries` WHERE `dir` = ?', array($config->dir));
