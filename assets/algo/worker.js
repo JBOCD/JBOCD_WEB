@@ -9,7 +9,7 @@ self.addEventListener("message", (function(){
 			self.close();
 			return;
 		}
-		if(codingMachine){
+		if(!codingMachine){
 			//console.log(data[0]);
 			self.importScripts(data[0]);
 			codingMachine = new Coding(data[1]);

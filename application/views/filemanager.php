@@ -116,84 +116,84 @@
 
 				var fileDownload = (function(){
 					return function(e){
-						var worker = new Worker('<?php echo asset_url(); ?>algo/worker.js');
-						var decodedChunkList = [];
-						var decodedRow = 0;
-						var numOfRow = 0;
-
-						var minAcceptChunk = Infinity; // maxLostChunk == numOfDrive - minAcceptChunk
-						// var verifyList = []; // for rebuild lost chunk
-						var getFileHandler = function(e){
-							if(minAcceptChunk < Infinity){
-								if(!numOfRow) numOfRow = Math.ceil(e.response.numOfChunk / numOfDrive);
-								while(e.resposne.seqQueue.length){
-									var row = Math.floor(e.resposne.seqQueue.shift() / numOfDrive);
-									var counter = 0;
-									var isLast = (row == numOfRow - 1);
-									for(var i=0; i<numOfDrive; i++){
-										if(e.response.chunkList[row * numOfDrive + i].isEnd){
-											counter++;
-										}
-									}
-									if(
-										!decodedChunkList[row]
-										&&
-										(
-											!isLast && counter >= minAccept
-											||
-											isLast && numOfDrive - minAcceptChunk >= e.response.numOfChunk % numOfDrive - counter
-										)
-									){
-										var chunkList = [];
-										var ref;
-										for(var i=0; i< numOfDrive; i++){
-											ref = e.response.chunkList[row*numOfDrive+i];
-											if(ref.isEnd && !ref.isError){
-												if(!ref.blob){
-													var tmp = [];
-													for(var j=0; j<ref.blobList.length; j++){
-														tmp.push(ref.blobList[j].blob);
-													}
-													ref.blob = new Blob(tmp);
-												}
-											}
-											chunkList.push(ref.blob);
-										}
-										worker.postMessage([
-											script,
-											[numOfDrive, 1024*1024],
-											chunkList,
-											["decode", row, ref.getSize]
-										]);
-									}
-								}
-							}else{
-								setTimeout(getFileHandler, 100, (function(a){var b=a;return b;})(e));
-							}
-						}
-
-						worker.onmessage = function(e){
-							switch(e.data[0]){
-								case "getMinAcceptChunk":
-									minAcceptChunk = e.data[1];
-									break;
-								case "decode":
-									if(e.data[2]){
-										decodedRow++;
-										decodedChunkList[e.data[1]] = e.data[2];
-										if(decodeRow == numOfRow){
-											FILE_DONE_LA = decodedChunkList;
-											console.log("Fin GET:", decodeChunkList);
-										}
-									}
-									break;
-							}
-						}
-						worker.postMessage([script, [numOfDrive, 1024*1024], null, ["getMinAcceptChunk"]]);
 						//console.log("Download file: ", this.innerHTML," id=", this.getAttribute("data-value"));
 						if(this.dataset.isFolder == "true"){ // data-is-folder
 							JBOCD.Socket.list(ldid, this.dataset.value, refreshFilelist);
 						}else{
+							var worker = new Worker('<?php echo asset_url(); ?>algo/worker.js');
+							var decodedChunkList = [];
+							var decodedRow = 0;
+							var numOfRow = 0;
+
+							var minAcceptChunk = Infinity; // maxLostChunk == numOfDrive - minAcceptChunk
+							// var verifyList = []; // for rebuild lost chunk
+							var getFileHandler = function(e){
+								if(minAcceptChunk < Infinity){
+									if(!numOfRow) numOfRow = Math.ceil(e.response.numOfChunk / numOfDrive);
+									while(e.resposne.seqQueue.length){
+										var row = Math.floor(e.resposne.seqQueue.shift() / numOfDrive);
+										var counter = 0;
+										var isLast = (row == numOfRow - 1);
+										for(var i=0; i<numOfDrive; i++){
+											if(e.response.chunkList[row * numOfDrive + i].isEnd){
+												counter++;
+											}
+										}
+										if(
+											!decodedChunkList[row]
+											&&
+											(
+												!isLast && counter >= minAccept
+												||
+												isLast && numOfDrive - minAcceptChunk >= e.response.numOfChunk % numOfDrive - counter
+											)
+										){
+											var chunkList = [];
+											var ref;
+											for(var i=0; i< numOfDrive; i++){
+												ref = e.response.chunkList[row*numOfDrive+i];
+												if(ref.isEnd && !ref.isError){
+													if(!ref.blob){
+														var tmp = [];
+														for(var j=0; j<ref.blobList.length; j++){
+															tmp.push(ref.blobList[j].blob);
+														}
+														ref.blob = new Blob(tmp);
+													}
+												}
+												chunkList.push(ref.blob);
+											}
+											worker.postMessage([
+												script,
+												[numOfDrive, 1024*1024],
+												chunkList,
+												["decode", row, ref.getSize]
+											]);
+										}
+									}
+								}else{
+									setTimeout(getFileHandler, 100, (function(a){var b=a;return b;})(e));
+								}
+							};
+
+							worker.onmessage = function(e){
+								switch(e.data[0]){
+									case "getMinAcceptChunk":
+										minAcceptChunk = e.data[1];
+										break;
+									case "decode":
+										if(e.data[2]){
+											decodedRow++;
+											decodedChunkList[e.data[1]] = e.data[2];
+											if(decodeRow == numOfRow){
+												FILE_DONE_LA = decodedChunkList;
+												console.log("Fin GET:", decodeChunkList);
+											}
+										}
+										break;
+								}
+							}
+							worker.postMessage([script, [numOfDrive, 1024*1024], null, ["getMinAcceptChunk"]]);
 							JBOCD.Socket.getFile(ldid, this.dataset.value, getFileHandler);
 						}
 					};
