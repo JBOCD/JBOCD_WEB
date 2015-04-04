@@ -19,7 +19,7 @@ self.addEventListener("message", (function(){
 				codingMachine.encode(data[2], data[3][1]);
 				break;
 			case 'decode':
-				codingMachine.decode(data[2]);
+				codingMachine.decode(data[2], data[3][1], data[3][2]);
 				break;
 			case 'getMinAcceptChunk':
 				codingMachine.getMinAcceptChunk();

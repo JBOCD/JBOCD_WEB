@@ -63,9 +63,10 @@ window.JBOCD.Socket = (function (){
 			}
 			socket.onmessage = function(evt){
 				var fileReader = new FileReader();
-				fileReader.onloadend = interpreter;
+				fileReader.onload = interpreter;
 				fileReader.blob = evt.data;
-				fileReader.readAsArrayBuffer(evt.data.slice(0,2));
+				fileReader.sliceBlob = evt.data.slice(0,2);
+				fileReader.readAsArrayBuffer(fileReader.sliceBlob);
 			}
 			socket.onerror = socket.onend = socket.onclose = this.close;
 		}else{
@@ -271,6 +272,10 @@ window.JBOCD.Socket = (function (){
 	}
 	var isNull = function(e){return !e;};
 	var interpreter = function(){
+console.log("Slice Blob Size: "+this.sliceBlob.size, this.sliceBlob);
+console.log("Blob Size: "+this.blob.size, this.blob);
+console.log("ArrayBuffer Size: "+this.result.byteLength, this.result);
+
 		var command = JBOCD.Network.toByte(this.result, 0);
 		var opID = JBOCD.Network.toByte(this.result, 1);
 		if(!operation[opID]) return ; // operationID has been release
@@ -460,7 +465,7 @@ window.JBOCD.Socket = (function (){
 
 		}
 		if(res.chunkList[seqNum].isEnd){
-			if(res.seqQueue){
+			if(!res.seqQueue){
 				res.seqQueue = [seqNum];
 			}else{
 				res.seqQueue.push(seqNum);
