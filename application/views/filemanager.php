@@ -59,7 +59,7 @@
 			                "searchable": false
 			            },{
 			            	"render": function(data,type,row){
-			            		return '<a href="#" class="downloadBtn" data-value="' + row[3] + '">' + data + '</a>';
+			            		return '<a href="#" class="downloadBtn" data-value="' + row[3] + '" data-is-folder="' + row[4] + '">' + data + '</a>';
 			            	},
 			            	"targets": 1
 			            }],
@@ -114,47 +114,158 @@
 //				var fileTemp = {};
 				var allChunks = 0, totalChunks = 0;
 
-				var fileDownload = function(e){
-					console.log("Download file: ", this.innerHTML," id=", this.getAttribute("data-value"));
-				};
+				var fileDownload = (function(){
+					return function(e){
+						//console.log("Download file: ", this.innerHTML," id=", this.getAttribute("data-value"));
+						if(this.dataset.isFolder == "true"){ // data-is-folder
+							JBOCD.Socket.list(ldid, this.dataset.value, refreshFilelist);
+						}else{
+							var worker = new Worker('<?php echo asset_url(); ?>algo/worker.js');
+							worker.onmessage = function(e){
+								switch(e.data[0]){
+									case "getMinAcceptChunk":
+										minAcceptChunk = e.data[1];
+										break;
+									case "decode":
+										if(e.data[2]){
+											decodedRow++;
+											decodedChunkList[e.data[1]] = e.data[2];
+											if(decodedRow == numOfRow){
+												FILE_DONE_LA = decodedChunkList;
+												console.log("Fin GET", decodedChunkList);
+											}else{
+												console.log("Not Yet OK", decodedRow, numOfRow);
+											}
+										}
+										break;
+								}
+							}
+							worker.postMessage([script, [numOfDrive, 1024*1024], null, ["getMinAcceptChunk"]]);
+
+							var decodedChunkList = [];
+							var decodedRow = 0;
+							var numOfRow = 0;
+
+							var minAcceptChunk = Infinity; // maxLostChunk == numOfDrive - minAcceptChunk
+							// var verifyList = []; // for rebuild lost chunk
+							var getFileHandler = function(e){
+								if(minAcceptChunk < Infinity){
+									if(!numOfRow) numOfRow = Math.ceil(e.response.numOfChunk / numOfDrive);
+									while(e.response.seqQueue && e.response.seqQueue.length){
+										var row = Math.floor(e.response.seqQueue.shift() / numOfDrive);
+										var counter = 0;
+										var isLast = (row == numOfRow - 1);
+										for(var i=0; i<numOfDrive; i++){
+											if(e.response.chunkList[row * numOfDrive + i] && e.response.chunkList[row * numOfDrive + i].isEnd){
+												counter++;
+											}
+										}
+										if(
+											!decodedChunkList[row]
+											&&
+											(
+												!isLast && counter >= minAcceptChunk
+												||
+												isLast && numOfDrive - minAcceptChunk >= e.response.numOfChunk % numOfDrive - counter
+											)
+										){
+											var chunkList = [];
+											var chunkSize = [];
+											var ref;
+											for(var i=0; i< numOfDrive; i++){
+												ref = e.response.chunkList[row*numOfDrive+i];
+												if(ref){
+													if(ref.isEnd && !ref.isError){
+														if(!ref.blob){
+															var tmp = [];
+															for(var j=0; j<ref.blobList.length; j++){
+																tmp.push(ref.blobList[j].blob);
+															}
+															ref.blob = new Blob(tmp);
+														}
+													}
+													chunkList.push(ref.blob);
+													chunkSize.push(ref.size);
+												}else{
+													chunkList.push(null);
+													chunkSize.push(-1);
+												}
+											}
+											worker.postMessage([
+												script,
+												[numOfDrive, 1024*1024],
+												chunkList,
+												["decode", row, chunkSize]
+											]);
+										}
+									}
+								}else{
+									setTimeout(getFileHandler, 100, (function(a){var b=a;return b;})(e));
+								}
+							};
+
+							JBOCD.Socket.getFile(ldid, Number(this.dataset.value), getFileHandler);
+						}
+					};
+				})();
 
 				//File array = [name, size]
-				var refreshFilelist = function(e){
-					files = [];
-					var fileList = e.response.fileList;
-					//console.log(fileList);
-					for(var i = 0; i < fileList.length; i++){
-						var size = fileList[i].size;
-						var unit;
-						if(fileList[i].size < 1024){ unit = " bytes"; }
-						else if(fileList[i].size < 1048576){ 
-							unit = " KB";
-							size /= 1024;
-						}else if(fileList[i].size < 1073741824){ 
-							unit = " MB";
-							size /= 1048576;
-						}else if(fileList[i].size < 1099511627776){ 
-							unit = " GB";
-							size /= 1073741824;
+				var refreshFilelist = (function(){
+					var parentStack = [];
+					return function(e){
+						files = [];
+						var fileList = e.response.fileList;
+						//console.log(fileList);
+						for(var i = 0; i < fileList.length; i++){
+							var size = fileList[i].size;
+							var unit;
+							if(fileList[i].size < 1024){ unit = " bytes"; }
+							else if(fileList[i].size < 1048576){
+								unit = " KB";
+								size /= 1024;
+							}else if(fileList[i].size < 1073741824){
+								unit = " MB";
+								size /= 1048576;
+							}else if(fileList[i].size < 1099511627776){
+								unit = " GB";
+								size /= 1073741824;
+							}
+							files[i] = [
+								null,
+								decodeURIComponent(fileList[i].name),
+								fileList[i].size == 0 ? "" : parseFloat(Math.round(size * 100) / 100).toFixed(2) + unit,
+								fileList[i].fID,
+								fileList[i].size == 0
+							];
 						}
-						files[i] = [
-							null,
-							decodeURIComponent(fileList[i].name),
-							parseFloat(Math.round(size * 100) / 100).toFixed(2) + unit,
-							fileList[i].fID
-						];
-					}
-					$('.downloadBtn').off('click', fileDownload);
-					dt.fnClearTable();
-					if(files.length > 0){ 
-						dt.fnAddData( files );
-						for(var i = 0; i < files.length; i++){
-							dt.fnSettings().aoData[i].nTr.value = files[i][3];
+						// handling go back operation
+						if(parentStack.length >= 2 && e.request.parentID == parentStack[parentStack.length-2]){
+							parentStack.pop();
+						}else{
+							parentStack.push(e.request.parentID);
 						}
-						$('.downloadBtn').on('click', fileDownload);
-					}
+						if(parentStack.length >= 2){
+							files.splice(0,0,[
+								null,
+								"↰ Go Back",
+								"",
+								parentStack[parentStack.length-2],
+								true
+							]);
+						}
+						// handling go back operation end
 
-				}
+						$('.downloadBtn').off('click', fileDownload);
+						dt.fnClearTable();
+						if(files.length > 0){ 
+							dt.fnAddData( files );
+							for(var i = 0; i < files.length; i++){
+								dt.fnSettings().aoData[i].nTr.value = files[i][3];
+							}
+							$('.downloadBtn').on('click', fileDownload);
+						}
+					}
+				})();
 
 				var workerCollection = function(id){
 					//if(fileTemp[id])

@@ -63,9 +63,10 @@ window.JBOCD.Socket = (function (){
 			}
 			socket.onmessage = function(evt){
 				var fileReader = new FileReader();
-				fileReader.onloadend = interpreter;
+				fileReader.onload = interpreter;
 				fileReader.blob = evt.data;
-				fileReader.readAsArrayBuffer(evt.data.slice(0,2));
+				fileReader.sliceBlob = evt.data.slice(0,2);
+				fileReader.readAsArrayBuffer(fileReader.sliceBlob);
 			}
 			socket.onerror = socket.onend = socket.onclose = this.close;
 		}else{
@@ -271,6 +272,10 @@ window.JBOCD.Socket = (function (){
 	}
 	var isNull = function(e){return !e;};
 	var interpreter = function(){
+console.log("Slice Blob Size: "+this.sliceBlob.size, this.sliceBlob);
+console.log("Blob Size: "+this.blob.size, this.blob);
+console.log("ArrayBuffer Size: "+this.result.byteLength, this.result);
+
 		var command = JBOCD.Network.toByte(this.result, 0);
 		var opID = JBOCD.Network.toByte(this.result, 1);
 		if(!operation[opID]) return ; // operationID has been release
@@ -438,7 +443,7 @@ window.JBOCD.Socket = (function (){
 			seqInfo.getSize += thisSize;
 			seqInfo.isEnd = seqInfo.isEnd || (this.blob.size == 15) || (seqInfo.getSize == seqInfo.size);
 			seqInfo.isError = seqInfo.isError || ( seqInfo.isEnd && (seqInfo.getSize != seqInfo.size) );
-			for(i=0; blobInfo.start < seqInfo.blobList[i].start || i < seqInfo.blobList.length; i++);
+			for(i=0; i < seqInfo.blobList.length && blobInfo.start < seqInfo.blobList[i].start; i++);
 			seqInfo.blobList.splice(i,0,blobInfo);
 		}else{
 			var thisSize = JBOCD.Network.toInt(this.result, 11);
@@ -454,12 +459,17 @@ window.JBOCD.Socket = (function (){
 					}
 				],
 				getSize: thisSize,
-				isEnd: (this.blob.size - 15 == thisSize) || (this.blob.size == 15)
+				isEnd: (this.blob.size - 15 == thisSize) || (this.blob.size == 15),
+				isError: this.blob.size == 15
 			}
-			res.chunkList[seqNum].isError = this.blob.size == 15;
 
 		}
 		if(res.chunkList[seqNum].isEnd){
+			if(!res.seqQueue){
+				res.seqQueue = [seqNum];
+			}else{
+				res.seqQueue.push(seqNum);
+			}
 			!!operation[opID].request.cb && operation[opID].request.cb.constructor == Function && operation[opID].request.cb(operation[opID]);
 			if(res.chunkList.findIndex(isNull) < 0){
 				delete operation[opID];
