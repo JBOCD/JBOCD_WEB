@@ -176,13 +176,14 @@ class Main extends CI_Controller {
 			array_push($content, array(
 				'id'=>$info['id'],
 				'provider'=>$drive->name,
-				'info'=>$info
+				'info'=>$info,
+				't_sum'=>$drive->t_sum
 			));
 			unset($handler);
 		}
 		$codes = array();
 		$algo = $this->algorithm_model->getAlgorithmList();
-		$this->view_model->generateView($this->load->view('volume', array('cloudDrives'=>$content, 'algo'=>$algo), true));
+		$this->view_model->generateView($this->load->view('volume', array('cloudDrives'=>$content, 'algo'=>$algo, 'logicalVolumes'=>$this->volume_model->getLogicalVolumeList($this->session->userdata('login_data')['id'])), true));
 		//$this->view_model->generateView($this->load->view('volume', array('cloudDrives'=>$content), true));
 	}
 

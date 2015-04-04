@@ -11,7 +11,7 @@ class Volume_model extends CI_Model {
 	}
 
 	public function getVolumeList($uid){
-		$query = $this->db->query('SELECT * FROM `volumesView` WHERE `uid` = ?', array($uid));
+		$query = $this->db->query('SELECT c.cdid, lid, uid, sum(size) t_sum, sum(alloc_size) t_alloc, lib.name, lib.dir FROM `clouddrive` c LEFT OUTER JOIN `logicaldrivecontainer` ld ON c.cdid = ld.cdid  LEFT OUTER JOIN `libraries` lib ON c.lid = lib.id  WHERE c.uid = ? GROUP BY c.cdid', array($uid));
 		if($query->num_rows() > 0){
 			return $query->result();
 		}

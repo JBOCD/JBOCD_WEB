@@ -10,7 +10,7 @@
                 <div>
 					<div  id="mainPanel" class="panel" data-role="panel">
 						<div class="panel-header bg-lightBlue fg-white collapse">Create volume</div>
-						<div   class="panel-content">
+						<div   class="panel-content" id="Mpanel-content">
 							<p>You may add volume that span across your cloud drives.</p>
 							<p>Configuration with multiple drives will be able to support fault-tolerance.</p>
 							<?php echo form_open('main/createVolume'); ?>
@@ -24,13 +24,15 @@
 	                                	<label>Select drive(s)</label>
 	                                	<?php
 	                                		foreach ($cloudDrives as $clouddrive) {
-	                                			$status = ($clouddrive['info']['status']?'':'disable');
+	                                			$quota = $clouddrive['info']['quota'] * 1024 * 1024 * 1024;
+                    							$availableCap = ($clouddrive['t_sum']?$quota-$clouddrive['t_sum']:$quota) / 1024 / 1024 / 1024;
+	                                			$status = ($clouddrive['info']['status']?'':'disabled');
+	                                			if($availableCap <= 0) $status = 'disabled';
 	                                	?>
 	                        <label>
-	                        	<input <?php echo $status;?> 
-	                        			type="checkbox" 
+	                        	<input 	type="checkbox" 
 	                        			name="newCD" 
-	                        			value="<?php echo $clouddrive['id'];?>" />
+	                        			value="<?php echo $clouddrive['id'];?>" <?php echo $status;?>>
 	                        	<span class="check"></span>
 	                        	<span class="text" data-role="input-control">
 	                                <input type="number" name="volume" id="vol_<?php echo $clouddrive['id'];?>" placeholder="size" maximum="<?php echo $clouddrive['info']['available'];?>">
@@ -38,7 +40,7 @@
 	                        	
                     			<?php echo $clouddrive['info']['name'];?>
                     			<span class="text-muted">
-                        			( Provider: <?php echo $clouddrive['provider'] ;?>, Available: <?php echo $clouddrive['info']['available'];?> GB / <?php echo $clouddrive['info']['quota'];?> GB )
+                        			( Provider: <?php echo $clouddrive['provider'] ;?>, Capacity: <?php echo $availableCap;?> GB / <?php echo $clouddrive['info']['quota'];?> GB )
                         		</span>
 	                        </label>
 	                                	<?php
@@ -49,7 +51,9 @@
 
 	                            <div class="input-control select panel-content">
 								    <select id="algo" name="algo">
-								    	<?php foreach ($algo as $a) { ?>
+								    	<?php foreach ($algo as $a) { 
+								    		$mainAlgo[$a->id] = $a->name;
+								    	?>
 								    		<option value="<?php echo $a->id;?>"><?php echo $a->name;?></option>
 								    	<?php } ?>
 								    </select>
@@ -79,10 +83,39 @@
 				</div>
 			</div>
 
+			<div class="row">
+			<?php 
+				if(sizeof($logicalVolumes) > 0){
+					foreach ($logicalVolumes as $ld) {
+			?>
+
+				<div class="tile double bg-green fg-white">
+					<div class="tile-content tile-status">
+						<div class="text"><span class="item-title fg-white"><?php echo $ld->name; ?></span></div>
+						<div class="text"><span class="fg-white">Size: <?php echo ($ld->size /1024 /1024 /1024); ?> GB</span></div>
+						<div class="text"><span class="fg-white"><?php echo $mainAlgo[$ld->algoid]; ?></span></div>
+					</div>
+					<div class="tile-status">
+						<div class="progress-bar" data-role="progress-bar" data-color="bg-lightGreen" data-value="100"></div>
+						<span class="text">Working folder: /JBOCD/<?php echo $ld->ldid;?></span>
+						
+					</div>
+					<div class="brand">
+						<div class="badge bg-red"><a href="mainDeleteLogicalVolume/<?php echo $ld->ldid;?>"><i class="icon-remove"></i></a></div>
+					</div>
+				</div>
+			<?php
+					}
+				}else{
+			?>
+				<h3>You have not configured a logical volume!</h3>
+			<?php } ?>
+			</div>
+
 			<script src="<?php echo asset_url(); ?>js/metro/metro-input-control.js"></script>
 			<script type="text/javascript">
-				$('#mainPanel').toggleClass('collapsed');
-
+			$("#mainPanel").toggleClass('collapsed');
+			$("#mainPanel #Mpanel-content").hide();
 				<?php
 					$desc = array();
 					foreach ($algo as $a) {
